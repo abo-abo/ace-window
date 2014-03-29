@@ -38,7 +38,7 @@
 ;; To setup this package, just add to your ~.emacs:
 ;;
 ;;    (global-set-key (kbd "M-p") 'ace-window)
-;;    
+;;
 ;; replacing "M-p"  with an appropriate shortcut.
 ;;
 ;; Depending on your window usage patterns, you might want to set
@@ -74,6 +74,10 @@
       (t
        (let ((candidate-list
               (mapcar (lambda (va)
+                        (let ((b (aj-visual-area-buffer va)))
+                          (when (= 0 (buffer-size b))
+                            (with-current-buffer b
+                              (insert " "))))
                         (make-aj-position
                          :offset (window-start (aj-visual-area-window va))
                          :visual-area va))
