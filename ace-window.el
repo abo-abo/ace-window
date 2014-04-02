@@ -61,7 +61,7 @@
 
 ;;;###autoload
 (defun ace-window ()
-  "Use variable `ace-jump-mode' to switch windows."
+  "Use function `ace-jump-mode' to switch windows."
   (interactive)
   (let ((visual-area-list
          (sort (ace-jump-list-visual-area)
