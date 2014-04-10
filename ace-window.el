@@ -63,9 +63,10 @@
 (defun ace-window ()
   "Use function `ace-jump-mode' to switch windows."
   (interactive)
-  (let ((visual-area-list
-         (sort (ace-jump-list-visual-area)
-               'aw-visual-area<)))
+  (let* ((ace-jump-mode-scope 'global)
+         (visual-area-list
+          (sort (ace-jump-list-visual-area)
+                'aw-visual-area<)))
     (cl-case (length visual-area-list)
       (0)
       (1)
