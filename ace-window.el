@@ -57,13 +57,21 @@
   :prefix "aw-")
 
 (defcustom aw-keys '(?1 ?2 ?3 ?4 ?5 ?6 ?7 ?8 ?9)
-  "Keys for selecting window.")
+  "Keys for selecting window."
+  :group 'ace-window)
+
+(defcustom aw-scope 'global
+  "The scope used by `ace-window'."
+  :group 'ace-window
+  :type '(choice
+	  (const :tag "global" global)
+	  (const :tag "frame" frame)))
 
 ;;;###autoload
 (defun ace-window ()
   "Use function `ace-jump-mode' to switch windows."
   (interactive)
-  (let* ((ace-jump-mode-scope 'global)
+  (let* ((ace-jump-mode-scope aw-scope)
          (visual-area-list
           (sort (ace-jump-list-visual-area)
                 'aw-visual-area<)))
