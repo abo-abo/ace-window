@@ -35,6 +35,13 @@ you remember your window layouts, you can switch windows without even
 looking at the leading char.  For instance, the top left window will
 always be `1`.
 
+## Swap and delete window
+
+You can swap windows by calling `ace-window` with a prefix argument **C-u**.
+
+You can delete the selected window by calling `ace-window` with a double prefix
+argument, i.e. **C-u C-u**.
+
 ## Customization
 
 Aside from binding `ace-window`, maybe you'd like to customize
