@@ -69,6 +69,7 @@
 	  (const :tag "frame" frame)))
 
 ;; ——— Macros ——————————————————————————————————————————————————————————————————
+;;;###autoload
 (defmacro aw-generic (mode-line handler)
   "Create a window-manipulating function.
 MODE-LINE is a string to display while a window is being selected.
