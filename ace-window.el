@@ -65,8 +65,19 @@
   "The scope used by `ace-window'."
   :group 'ace-window
   :type '(choice
-	  (const :tag "global" global)
-	  (const :tag "frame" frame)))
+          (const :tag "global" global)
+          (const :tag "frame" frame)))
+
+(defun aw-list-visual-area ()
+  "Forward to `ace-jump-list-visual-area', removing invisible frames."
+  (cl-remove-if
+   (lambda (x)
+     (let ((f (aj-visual-area-frame x)))
+       (or (not (and (frame-live-p f)
+                     (frame-visible-p f)))
+           (and (= (frame-height f) 10)
+                (= (frame-width f) 10)))))
+   (ace-jump-list-visual-area)))
 
 ;; ——— Macros ——————————————————————————————————————————————————————————————————
 ;;;###autoload
@@ -120,7 +131,7 @@ HANDLER is a function that takes a window argument."
        (interactive)
        (let* ((ace-jump-mode-scope aw-scope)
               (visual-area-list
-               (sort (ace-jump-list-visual-area)
+               (sort (aw-list-visual-area)
                      'aw-visual-area<)))
          (cl-case (length visual-area-list)
            (0)
