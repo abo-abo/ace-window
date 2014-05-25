@@ -68,6 +68,7 @@
           (const :tag "global" global)
           (const :tag "frame" frame)))
 
+;;;###autoload
 (defun aw-list-visual-area ()
   "Forward to `ace-jump-list-visual-area', removing invisible frames."
   (cl-remove-if
