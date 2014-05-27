@@ -138,7 +138,7 @@ HANDLER is a function that takes a window argument."
            (0)
            (1)
            (2
-            (,handler (next-window)))
+            (,handler (next-window nil nil 'visible)))
            (t
             (let ((candidate-list
                    (mapcar (lambda (va)
@@ -230,16 +230,18 @@ Windows are numbered top down, left to right."
 
 (defun aw-switch-to-window (position)
   "Switch to window of `aj-position' structure POSITION."
-  (if (windowp position)
-      (select-window position)
-    (let ((frame (aj-position-frame position))
-          (window (aj-position-window position)))
-      (if (and (frame-live-p frame)
-               (not (eq frame (selected-frame))))
-          (select-frame-set-input-focus (window-frame window)))
-      (if (and (window-live-p window)
-               (not (eq window (selected-window))))
-          (select-window window)))))
+  (let (frame window)
+    (if (windowp position)
+        (setq frame (window-frame position)
+              window position)
+      (setq frame (aj-position-frame position)
+            window (aj-position-window position)))
+    (if (and (frame-live-p frame)
+             (not (eq frame (selected-frame))))
+        (select-frame-set-input-focus frame))
+    (if (and (window-live-p window)
+             (not (eq window (selected-window))))
+        (select-window window))))
 
 (defun aw-delete-window (position)
   "Delete window of `aj-position' structure POSITION."
