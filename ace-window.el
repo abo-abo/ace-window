@@ -252,8 +252,7 @@ Windows are numbered top down, left to right."
       (if (and (frame-live-p frame)
                (not (eq frame (selected-frame))))
           (select-frame-set-input-focus (window-frame window)))
-      (if (and (window-live-p window)
-               (not (eq window (selected-window))))
+      (if (window-live-p window)
           (delete-window window)))))
 
 (defun aw-swap-window (position)
