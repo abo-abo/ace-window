@@ -151,9 +151,6 @@ HANDLER is a function that takes a window argument."
                               :offset (window-start (aj-visual-area-window va))
                               :visual-area va))
                            visual-area-list)))
-              ;; make indirect buffer for those windows that show the same buffer
-              (setq ace-jump-recover-visual-area-list
-                    (ace-jump-mode-make-indirect-buffer visual-area-list))
               ;; create background for each visual area
               (if ace-jump-mode-gray-background
                   (setq ace-jump-background-overlay-list
