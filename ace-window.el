@@ -92,7 +92,7 @@ HANDLER is a function that takes a window argument."
          (interactive)
          (if w
              (,handler w)
-           (let* ((index (let ((ret (position (aref (this-command-keys) 0)
+           (let* ((index (let ((ret (cl-position (aref (this-command-keys) 0)
                                               aw-keys)))
                            (if ret ret (length aw-keys))))
                   (node (nth index (cdr ace-jump-search-tree))))
