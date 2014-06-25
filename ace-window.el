@@ -131,6 +131,10 @@ HANDLER is a function that takes a window argument."
        (lambda ()
        (interactive)
        (let* ((ace-jump-mode-scope aw-scope)
+              (next-window-scope
+               (cl-case aw-scope
+                 ('global 'visible)
+                 ('frame 'frame)))
               (visual-area-list
                (sort (aw-list-visual-area)
                      'aw-visual-area<)))
@@ -138,7 +142,7 @@ HANDLER is a function that takes a window argument."
            (0)
            (1)
            (2
-            (,handler (next-window nil nil 'visible)))
+            (,handler (next-window nil nil next-window-scope)))
            (t
             (let ((candidate-list
                    (mapcar (lambda (va)
