@@ -93,7 +93,7 @@ HANDLER is a function that takes a window argument."
          (if w
              (,handler w)
            (let* ((index (let ((ret (cl-position (aref (this-command-keys) 0)
-                                              aw-keys)))
+                                                 aw-keys)))
                            (if ret ret (length aw-keys))))
                   (node (nth index (cdr ace-jump-search-tree))))
              (cond
@@ -129,63 +129,64 @@ HANDLER is a function that takes a window argument."
                 (ace-jump-done)
                 (error "[AceJump] Internal error: tree node type is invalid"))))))
        (lambda ()
-       (interactive)
-       (let* ((ace-jump-mode-scope aw-scope)
-              (next-window-scope
-               (cl-case aw-scope
-                 ('global 'visible)
-                 ('frame 'frame)))
-              (visual-area-list
-               (sort (aw-list-visual-area)
-                     'aw-visual-area<)))
-         (cl-case (length visual-area-list)
-           (0)
-           (1)
-           (2
-            (,handler (next-window nil nil next-window-scope)))
-           (t
-            (let ((candidate-list
-                   (mapcar (lambda (va)
-                             (let ((b (aj-visual-area-buffer va)))
-                               ;; ace-jump-mode can't jump if the buffer is empty
-                               (when (= 0 (buffer-size b))
-                                 (with-current-buffer b
-                                   (insert " "))))
-                             (make-aj-position
-                              :offset (window-start (aj-visual-area-window va))
-                              :visual-area va))
-                           visual-area-list)))
-              ;; create background for each visual area
-              (if ace-jump-mode-gray-background
-                  (setq ace-jump-background-overlay-list
-                        (loop for va in visual-area-list
-                           collect (let* ((w (aj-visual-area-window va))
-                                          (b (aj-visual-area-buffer va))
-                                          (ol (make-overlay (window-start w)
-                                                            (window-end w)
-                                                            b)))
-                                     (overlay-put ol 'face 'ace-jump-face-background)
-                                     ol))))
-              ;; construct search tree and populate overlay into tree
-              (setq ace-jump-search-tree
-                    (ace-jump-tree-breadth-first-construct
-                     (length candidate-list)
-                     (length aw-keys)))
-              (ace-jump-populate-overlay-to-search-tree
-               ace-jump-search-tree candidate-list)
-              (ace-jump-update-overlay-in-search-tree
-               ace-jump-search-tree aw-keys)
-              (setq ace-jump-mode ,mode-line)
-              (force-mode-line-update)
-              ;; override the local key map
-              (setq overriding-local-map
-                    (let ((map (make-keymap)))
-                      (dolist (key-code aw-keys)
-                        (define-key map (make-string 1 key-code) ',wrapper))
-                      (define-key map [t] 'ace-jump-done)
-                      map))
-              (add-hook 'mouse-leave-buffer-hook 'ace-jump-done)
-              (add-hook 'kbd-macro-termination-hook 'ace-jump-done)))))))))
+         (interactive)
+         (let* ((ace-jump-mode-scope aw-scope)
+                (next-window-scope
+                 (cl-case aw-scope
+                   ('global 'visible)
+                   ('frame 'frame)))
+                (visual-area-list
+                 (sort (aw-list-visual-area)
+                       'aw-visual-area<)))
+           (cl-case (length visual-area-list)
+             (0)
+             (1)
+             (2
+              (,handler (next-window nil nil next-window-scope)))
+             (t
+              (let ((candidate-list
+                     (mapcar (lambda (va)
+                               (let ((b (aj-visual-area-buffer va)))
+                                 ;; ace-jump-mode can't jump if the buffer is empty
+                                 (when (= 0 (buffer-size b))
+                                   (with-current-buffer b
+                                     (insert " "))))
+                               (make-aj-position
+                                :offset (+ (window-start (aj-visual-area-window va))
+                                           (window-hscroll (aj-visual-area-window va)))
+                                :visual-area va))
+                             visual-area-list)))
+                ;; create background for each visual area
+                (if ace-jump-mode-gray-background
+                    (setq ace-jump-background-overlay-list
+                          (loop for va in visual-area-list
+                             collect (let* ((w (aj-visual-area-window va))
+                                            (b (aj-visual-area-buffer va))
+                                            (ol (make-overlay (window-start w)
+                                                              (window-end w)
+                                                              b)))
+                                       (overlay-put ol 'face 'ace-jump-face-background)
+                                       ol))))
+                ;; construct search tree and populate overlay into tree
+                (setq ace-jump-search-tree
+                      (ace-jump-tree-breadth-first-construct
+                       (length candidate-list)
+                       (length aw-keys)))
+                (ace-jump-populate-overlay-to-search-tree
+                 ace-jump-search-tree candidate-list)
+                (ace-jump-update-overlay-in-search-tree
+                 ace-jump-search-tree aw-keys)
+                (setq ace-jump-mode ,mode-line)
+                (force-mode-line-update)
+                ;; override the local key map
+                (setq overriding-local-map
+                      (let ((map (make-keymap)))
+                        (dolist (key-code aw-keys)
+                          (define-key map (make-string 1 key-code) ',wrapper))
+                        (define-key map [t] 'ace-jump-done)
+                        map))
+                (add-hook 'mouse-leave-buffer-hook 'ace-jump-done)
+                (add-hook 'kbd-macro-termination-hook 'ace-jump-done)))))))))
 
 ;; ——— Interactive —————————————————————————————————————————————————————————————
 ;;;###autoload
