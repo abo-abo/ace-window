@@ -152,8 +152,8 @@ HANDLER is a function that takes a window argument."
                                    (with-current-buffer b
                                      (insert " "))))
                                (make-aj-position
-                                :offset (+ (window-start (aj-visual-area-window va))
-                                           (window-hscroll (aj-visual-area-window va)))
+                                :offset
+                                (aw-offset (aj-visual-area-window va))
                                 :visual-area va))
                              visual-area-list)))
                 ;; create background for each visual area
@@ -280,6 +280,23 @@ Windows are numbered top down, left to right."
             (swap-windows
              (get-buffer-window (current-buffer))
              window))))))
+
+(defun aw-offset (window)
+  "Return point in WINDOW that's closest to top left corner.
+The point is writable, i.e. it's not part of space after newline."
+  (let ((h (window-hscroll window))
+        (beg (window-start window))
+        (end (window-end window)))
+    (with-current-buffer
+        (window-buffer window)
+      (save-excursion
+        (goto-char beg)
+        (while (and (< (point) end)
+                    (< (- (line-end-position)
+                          (line-beginning-position))
+                       h))
+          (forward-line))
+        (+ (point) h)))))
 
 (provide 'ace-window)
 
