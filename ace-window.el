@@ -4,7 +4,7 @@
 
 ;; Author: Oleh Krehel <ohwoeowho@gmail.com>
 ;; URL: https://github.com/abo-abo/ace-window
-;; Version: 0.2.0
+;; Version: 0.3.0
 ;; Package-Requires: ((ace-jump-mode "2.0"))
 ;; Keywords: cursor, window, location
 
