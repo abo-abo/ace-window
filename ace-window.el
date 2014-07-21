@@ -47,6 +47,12 @@
 ;;
 ;; This way they're all on the home row, although the intuitive
 ;; ordering is lost.
+;;
+;; When prefixed with one `universal-argument', instead of switching
+;; to selected window, the selected window is swapped with current one.
+;;
+;; When prefixed with two `universal-argument', the selected window is
+;; deleted instead.
 
 ;;; Code:
 (require 'ace-jump-mode)
@@ -204,12 +210,22 @@ HANDLER is a function that takes a window argument."
     (aw-generic " Ace - Swap Window" aw-swap-window)
   "Ace swap window.")
 
+
+
 ;;;###autoload
 (defun ace-window (arg)
-  "Ace jump to window and perform an action based on prefix ARG.
-- with no arg: select window
-- with one arg: swap window
-- with double arg: delete window"
+  "Select a window with `ace-jump-mode'and perform an action based on prefix ARG.
+Variations are described below.
+
+By default, behaves like extended `other-window'.
+
+Prefixed with one \\[universal-argument], does a swap between
+ selected window and current window, so that the selected buffer
+ moves to current window (and current buffer moves to selected
+ window).
+
+Prefixed with two \\[universal-argument]'s, deletes the selected
+ window."
   (interactive "p")
   (cl-case arg
     (4 (ace-swap-window))
