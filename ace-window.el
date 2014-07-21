@@ -4,7 +4,7 @@
 
 ;; Author: Oleh Krehel <ohwoeowho@gmail.com>
 ;; URL: https://github.com/abo-abo/ace-window
-;; Version: 0.3.0
+;; Version: 0.4.0
 ;; Package-Requires: ((ace-jump-mode "2.0"))
 ;; Keywords: cursor, window, location
 
@@ -210,8 +210,6 @@ HANDLER is a function that takes a window argument."
     (aw-generic " Ace - Swap Window" aw-swap-window)
   "Ace swap window.")
 
-
-
 ;;;###autoload
 (defun ace-window (arg)
   "Select a window with `ace-jump-mode'and perform an action based on prefix ARG.
@@ -237,9 +235,14 @@ Prefixed with two \\[universal-argument]'s, deletes the selected
   "Return true if visual area VA1 is less than VA2.
 This is determined by their respective window coordinates.
 Windows are numbered top down, left to right."
-  (let ((e1 (window-edges (aj-visual-area-window va1)))
+  (let ((f1 (aj-visual-area-frame va1))
+        (f2 (aj-visual-area-frame va2))
+        (e1 (window-edges (aj-visual-area-window va1)))
         (e2 (window-edges (aj-visual-area-window va2))))
-    (cond ((< (car e1) (car e2))
+    (cond ((string< (frame-parameter f1 'window-id)
+                    (frame-parameter f2 'window-id))
+           t)
+          ((< (car e1) (car e2))
            t)
           ((> (car e1) (car e2))
            nil)
