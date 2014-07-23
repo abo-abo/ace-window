@@ -74,6 +74,21 @@
           (const :tag "global" global)
           (const :tag "frame" frame)))
 
+(defcustom aw-ignored-buffers '("*Calc Trail*")
+  "List of buffers to ignore when selecting window."
+  :group 'ace-window)
+
+(defcustom aw-ignore-on t
+  "When t, `ace-window' will ignore `aw-ignored-buffers'.
+Use M-0 `ace-window' to toggle this value."
+  :group 'ace-window)
+
+(defun aw-ignored-p (window)
+  "Return t if WINDOW should be ignored."
+  (and aw-ignore-on
+       (member (buffer-name (window-buffer window))
+               aw-ignored-buffers)))
+
 ;;;###autoload
 (defun aw-list-visual-area ()
   "Forward to `ace-jump-list-visual-area', removing invisible frames."
@@ -83,7 +98,8 @@
        (or (not (and (frame-live-p f)
                      (frame-visible-p f)))
            (and (= (frame-height f) 10)
-                (= (frame-width f) 10)))))
+                (= (frame-width f) 10))
+           (aw-ignored-p (aj-visual-area-window x)))))
    (ace-jump-list-visual-area)))
 
 ;; ——— Macros ——————————————————————————————————————————————————————————————————
@@ -146,9 +162,19 @@ HANDLER is a function that takes a window argument."
                        'aw-visual-area<)))
            (cl-case (length visual-area-list)
              (0)
-             (1)
+             (1
+              (when (aw-ignored-p (selected-window))
+                (other-window 1)))
              (2
-              (,handler (next-window nil nil next-window-scope)))
+              (if (aw-ignored-p (selected-window))
+                  (other-window 1)
+                (let ((sw (selected-window))
+                      (w (next-window nil nil next-window-scope)))
+                  (while (aw-ignored-p w)
+                    (select-window w)
+                    (setq w (next-window nil nil next-window-scope)))
+                  (select-window sw)
+                  (,handler w))))
              (t
               (let ((candidate-list
                      (mapcar (lambda (va)
@@ -217,15 +243,17 @@ Variations are described below.
 
 By default, behaves like extended `other-window'.
 
-Prefixed with one \\[universal-argument], does a swap between
- selected window and current window, so that the selected buffer
- moves to current window (and current buffer moves to selected
- window).
+Prefixed with one \\[universal-argument], does a swap between selected window
+ and current window, so that the selected buffer moves to current window (and
+ current buffer moves to selected window).
 
-Prefixed with two \\[universal-argument]'s, deletes the selected
- window."
+Prefixed with two \\[universal-argument]'s, deletes the selected window."
   (interactive "p")
   (cl-case arg
+    (0
+     (setq aw-ignore-on
+           (not aw-ignore-on))
+     (ace-select-window))
     (4 (ace-swap-window))
     (16 (ace-delete-window))
     (t (ace-select-window))))
