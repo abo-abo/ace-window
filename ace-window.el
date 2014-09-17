@@ -160,11 +160,21 @@ HANDLER is a function that takes a window argument."
                 (visual-area-list
                  (sort (aw-list-visual-area)
                        'aw-visual-area<)))
+           (unless (<= (length visual-area-list) 2)
+             (setq visual-area-list
+                   (cl-remove-if (lambda (va)
+                                   (let ((b (aj-visual-area-buffer va)))
+                                     (with-current-buffer b
+                                       (and buffer-read-only
+                                            (= 0 (buffer-size b))))))
+                                 visual-area-list)))
            (cl-case (length visual-area-list)
              (0)
              (1
-              (when (aw-ignored-p (selected-window))
-                (other-window 1)))
+              (if (aw-ignored-p (selected-window))
+                  (other-window 1)
+                ;; don't get stuck in an empty read-only buffer
+                (select-window (aj-visual-area-window (car visual-area-list)))))
              (2
               (if (aw-ignored-p (selected-window))
                   (other-window 1)
