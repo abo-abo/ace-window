@@ -232,16 +232,20 @@ HANDLER is a function that takes a window argument."
 
 ;; ——— Interactive —————————————————————————————————————————————————————————————
 ;;;###autoload
+(defun ace-select-window () (interactive) "Ace select window.")
+;;;###autoload
+(defun ace-delete-window () (interactive) "Ace delete window.")
+;;;###autoload
+(defun ace-swap-window () (interactive) "Ace swap window.")
+
 (defalias 'ace-select-window
     (aw-generic " Ace - Window" aw-switch-to-window)
   "Ace select window.")
 
-;;;###autoload
 (defalias 'ace-delete-window
     (aw-generic " Ace - Delete Window" aw-delete-window)
   "Ace delete window.")
 
-;;;###autoload
 (defalias 'ace-swap-window
     (aw-generic " Ace - Swap Window" aw-swap-window)
   "Ace swap window.")
