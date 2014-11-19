@@ -97,8 +97,7 @@ Use M-0 `ace-window' to toggle this value."
      (let ((f (aj-visual-area-frame x)))
        (or (not (and (frame-live-p f)
                      (frame-visible-p f)))
-           (and (= (frame-height f) 10)
-                (= (frame-width f) 10))
+           (string= "initial_terminal" (terminal-name f))
            (aw-ignored-p (aj-visual-area-window x)))))
    (ace-jump-list-visual-area)))
 
