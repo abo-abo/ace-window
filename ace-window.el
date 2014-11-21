@@ -346,7 +346,8 @@ Windows are numbered top down, left to right."
 The point is writable, i.e. it's not part of space after newline."
   (let ((h (window-hscroll window))
         (beg (window-start window))
-        (end (window-end window)))
+        (end (window-end window))
+        (inhibit-field-text-motion t))
     (with-current-buffer
         (window-buffer window)
       (save-excursion
