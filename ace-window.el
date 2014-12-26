@@ -4,7 +4,7 @@
 
 ;; Author: Oleh Krehel <ohwoeowho@gmail.com>
 ;; URL: https://github.com/abo-abo/ace-window
-;; Version: 0.5.0
+;; Version: 0.6.0
 ;; Package-Requires: ((ace-jump-mode "2.0"))
 ;; Keywords: cursor, window, location
 
@@ -322,15 +322,14 @@ Windows are numbered top down, left to right."
                   (set-window-buffer window2 buffer1)
                   (select-window window2))))
     (let ((frame (aj-position-frame aj-data))
-          (window (aj-position-window aj-data)))
+          (window (aj-position-window aj-data))
+          (this-window (selected-window)))
       (when (and (frame-live-p frame)
                  (not (eq frame (selected-frame))))
         (select-frame-set-input-focus (window-frame window)))
       (when (and (window-live-p window)
-                 (not (eq window (selected-window))))
-        (swap-windows
-         (get-buffer-window (current-buffer))
-         window)))))
+                 (not (eq window this-window)))
+        (swap-windows this-window window)))))
 
 (defun aw-offset (window)
   "Return point in WINDOW that's closest to top left corner.
