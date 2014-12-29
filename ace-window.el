@@ -83,6 +83,10 @@
 Use M-0 `ace-window' to toggle this value."
   :group 'ace-window)
 
+(defcustom aw-background t
+  "When t, `ace-window' will dim out all buffers temporarily when used.'."
+  :group 'ace-window)
+
 (defun aw-ignored-p (window)
   "Return t if WINDOW should be ignored."
   (and aw-ignore-on
@@ -192,7 +196,7 @@ Set mode line to MODE-LINE during the selection process."
                          :visual-area va))
                       visual-area-list)))
          ;; create background for each visual area
-         (if ace-jump-mode-gray-background
+         (if aw-background
              (setq ace-jump-background-overlay-list
                    (loop for va in visual-area-list
                       collect (let* ((w (aj-visual-area-window va))
