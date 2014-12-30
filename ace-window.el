@@ -218,12 +218,14 @@ Set mode line to MODE-LINE during the selection process."
          (setq ace-jump-mode mode-line)
          (force-mode-line-update)
          ;; override the local key map
-         (setq overriding-local-map
-               (let ((map (make-keymap)))
-                 (dolist (key-code aw-keys)
-                   (define-key map (make-string 1 key-code) 'aw--callback))
-                 (define-key map [t] 'ace-jump-done)
-                 map))
+         (let ((map (make-keymap)))
+           (dolist (key-code aw-keys)
+             (define-key map (make-string 1 key-code) 'aw--callback))
+           (define-key map [t] 'ace-jump-done)
+           (if (fboundp 'set-transient-map)
+               (set-transient-map map)
+             (set-temporary-overlay-map map)))
+
          (add-hook 'mouse-leave-buffer-hook 'ace-jump-done)
          (add-hook 'kbd-macro-termination-hook 'ace-jump-done))))))
 
