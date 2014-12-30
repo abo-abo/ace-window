@@ -217,6 +217,8 @@ Set mode line to MODE-LINE during the selection process."
           ace-jump-search-tree aw-keys)
          (setq ace-jump-mode mode-line)
          (force-mode-line-update)
+         ;; turn off helm transient map
+         (remove-hook 'post-command-hook 'helm--maybe-update-keymap)
          ;; override the local key map
          (let ((map (make-keymap)))
            (dolist (key-code aw-keys)
