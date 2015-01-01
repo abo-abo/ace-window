@@ -81,10 +81,12 @@
 (defcustom aw-ignore-on t
   "When t, `ace-window' will ignore `aw-ignored-buffers'.
 Use M-0 `ace-window' to toggle this value."
+  :type 'boolean
   :group 'ace-window)
 
 (defcustom aw-background t
   "When t, `ace-window' will dim out all buffers temporarily when used.'."
+  :type 'boolean
   :group 'ace-window)
 
 (defun aw-ignored-p (window)
