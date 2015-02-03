@@ -89,6 +89,9 @@ Use M-0 `ace-window' to toggle this value."
   :type 'boolean
   :group 'ace-window)
 
+(defvar ace-window-end-hook nil
+  "Function(s) to call after `ace-window' is done.")
+
 (defun aw-ignored-p (window)
   "Return t if WINDOW should be ignored."
   (and aw-ignore-on
@@ -134,6 +137,7 @@ Use M-0 `ace-window' to toggle this value."
              (ace-jump-push-mark)
              (run-hooks 'ace-jump-mode-before-jump-hook)
              (funcall aw--current-op aj-data))
+           (run-hooks 'ace-window-end-hook)
            (run-hooks 'ace-jump-mode-end-hook))
 
           (t
