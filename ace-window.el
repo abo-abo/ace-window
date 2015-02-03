@@ -266,6 +266,17 @@ Set mode line to MODE-LINE during the selection process."
   (aw--doit " Ace - Swap Window"))
 
 ;;;###autoload
+(defun ace-maximize-window ()
+  "Ace maximize window."
+  (interactive)
+  (setq aw--current-op
+        (lambda (aj)
+          (let ((wnd (aj-position-window aj)))
+            (select-window wnd)
+            (delete-other-windows))))
+  (aw--doit " Ace - Maximize Window"))
+
+;;;###autoload
 (defun ace-window (arg)
   "Select a window with function `ace-jump-mode'.
 Perform an action based on ARG described below.
