@@ -92,6 +92,10 @@ Use M-0 `ace-window' to toggle this value."
 (defvar ace-window-end-hook nil
   "Function(s) to call after `ace-window' is done.")
 
+(defvar ace-window-end-once-hook nil
+  "Function(s) to call once after `ace-window' is done.
+This hook is set to nil with each call to `ace-window'.")
+
 (defun aw-ignored-p (window)
   "Return t if WINDOW should be ignored."
   (and aw-ignore-on
@@ -138,6 +142,8 @@ Use M-0 `ace-window' to toggle this value."
              (run-hooks 'ace-jump-mode-before-jump-hook)
              (funcall aw--current-op aj-data))
            (run-hooks 'ace-window-end-hook)
+           (run-hooks 'ace-window-end-once-hook)
+           (setq ace-window-end-once-hook)
            (run-hooks 'ace-jump-mode-end-hook))
 
           (t
