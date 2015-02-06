@@ -116,16 +116,14 @@ This hook is set to nil with each call to `ace-window'.")
 (defvar aw--current-op nil
   "A function of one argument to call.")
 
-(defun aw--callback ()
-  "Call `aw--current-op' for the window selected by ace-jump."
-  (interactive)
-  (let* ((index (or (cl-position (aref (this-command-keys) 0)
-                                 aw-keys)
+(defun aw--callback-body (char)
+  (let* ((index (or (cl-position char aw-keys)
                     (length aw-keys)))
          (node (nth index (cdr ace-jump-search-tree))))
     (cond ((null node)
            (message "No such position candidate.")
-           (ace-jump-done))
+           ;; (ace-jump-done)
+           )
 
           ((eq (car node) 'branch)
            (let ((old-tree ace-jump-search-tree))
@@ -150,6 +148,29 @@ This hook is set to nil with each call to `ace-window'.")
            (ace-jump-done)
            (error "[AceJump] Internal error: tree node type is invalid")))))
 
+(defun aw--callback ()
+  "Call `aw--current-op' for the window selected by ace-jump."
+  (interactive)
+  (aw--callback-body (aref (this-command-keys) 0)))
+
+(defun aw--done ()
+  (setq ace-jump-query-char nil)
+  (setq ace-jump-current-mode nil)
+
+  ;; clean the status line
+  (setq ace-jump-mode nil)
+  (force-mode-line-update)
+
+  ;; delete background overlay
+  (loop for ol in ace-jump-background-overlay-list
+     do (delete-overlay ol))
+  (setq ace-jump-background-overlay-list nil)
+
+  ;; delete overlays in search tree
+  (when ace-jump-search-tree
+    (ace-jump-delete-overlay-in-search-tree ace-jump-search-tree)
+    (setq ace-jump-search-tree nil)))
+
 (defun aw--doit (mode-line)
   "Select a window and eventually call `aw--current-op' for it.
 Set mode line to MODE-LINE during the selection process."
@@ -172,7 +193,8 @@ Set mode line to MODE-LINE during the selection process."
                         (= 0 (buffer-size b))))))
              visual-area-list))))
     (cl-case (length visual-area-list)
-      (0)
+      (0
+       (error "Nowhere to switch to"))
       (1
        (if (aw-ignored-p (selected-window))
            (other-window 1)
@@ -231,17 +253,24 @@ Set mode line to MODE-LINE during the selection process."
          (force-mode-line-update)
          ;; turn off helm transient map
          (remove-hook 'post-command-hook 'helm--maybe-update-keymap)
-         ;; override the local key map
-         (let ((map (make-keymap)))
-           (dolist (key-code aw-keys)
-             (define-key map (make-string 1 key-code) 'aw--callback))
-           (define-key map [t] 'ace-jump-done)
-           (if (fboundp 'set-transient-map)
-               (set-transient-map map)
-             (set-temporary-overlay-map map)))
+         (unwind-protect
+              (let ((char (read-char mode-line)))
+                (aw--callback-body char))
+           (aw--done))
 
-         (add-hook 'mouse-leave-buffer-hook 'ace-jump-done)
-         (add-hook 'kbd-macro-termination-hook 'ace-jump-done))))))
+
+         ;; override the local key map
+         ;; (let ((map (make-keymap)))
+         ;;   (dolist (key-code aw-keys)
+         ;;     (define-key map (make-string 1 key-code) 'aw--callback))
+         ;;   (define-key map [t] 'ace-jump-done)
+         ;;   (if (fboundp 'set-transient-map)
+         ;;       (set-transient-map map)
+         ;;     (set-temporary-overlay-map map)))
+
+         ;; (add-hook 'mouse-leave-buffer-hook 'ace-jump-done)
+         ;; (add-hook 'kbd-macro-termination-hook 'ace-jump-done)
+         )))))
 
 ;; ——— Interactive —————————————————————————————————————————————————————————————
 ;;;###autoload
