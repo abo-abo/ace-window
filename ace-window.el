@@ -4,7 +4,7 @@
 
 ;; Author: Oleh Krehel <ohwoeowho@gmail.com>
 ;; URL: https://github.com/abo-abo/ace-window
-;; Version: 0.6.1
+;; Version: 0.7.0
 ;; Package-Requires: ((ace-jump-mode "2.0"))
 ;; Keywords: cursor, window, location
 
@@ -91,10 +91,16 @@ Use M-0 `ace-window' to toggle this value."
 
 (defvar ace-window-end-hook nil
   "Function(s) to call after `ace-window' is done.")
+(make-obsolete-variable
+ 'ace-window-end-hook
+ "Don't use `ace-window-end-hook', just call what you need right after `ace-window'" "0.7.0")
 
 (defvar ace-window-end-once-hook nil
   "Function(s) to call once after `ace-window' is done.
 This hook is set to nil with each call to `ace-window'.")
+(make-obsolete-variable
+ 'ace-window-end-once-hook
+ "Don't use `ace-window-end-once-hook', just call what you need right after `ace-window'" "0.7.0")
 
 (defun aw-ignored-p (window)
   "Return t if WINDOW should be ignored."
@@ -112,9 +118,6 @@ This hook is set to nil with each call to `ace-window'.")
            (string= "initial_terminal" (terminal-name f))
            (aw-ignored-p (aj-visual-area-window x)))))
    (ace-jump-list-visual-area)))
-
-(defvar aw--current-op nil
-  "A function of one argument to call.")
 
 (defun aw--done ()
   (setq ace-jump-query-char nil)
@@ -134,8 +137,9 @@ This hook is set to nil with each call to `ace-window'.")
     (ace-jump-delete-overlay-in-search-tree ace-jump-search-tree)
     (setq ace-jump-search-tree nil)))
 
-(defun aw--doit (mode-line)
-  "Select a window and eventually call `aw--current-op' for it.
+(defun aw--doit (function mode-line)
+  "Select a window and call FUNCTION for it.
+FUNCTION should accept a single `aj-position' structure.
 Set mode line to MODE-LINE during the selection process."
   (let* ((ace-jump-mode-scope aw-scope)
          (next-window-scope
@@ -172,7 +176,7 @@ Set mode line to MODE-LINE during the selection process."
              (select-window w)
              (setq w (next-window nil nil next-window-scope)))
            (select-window sw)
-           (funcall aw--current-op
+           (funcall function
                     (make-aj-position
                      :offset 0
                      :visual-area (make-aj-visual-area
@@ -241,7 +245,7 @@ Set mode line to MODE-LINE during the selection process."
                              (ace-jump-done)
                              (ace-jump-push-mark)
                              (run-hooks 'ace-jump-mode-before-jump-hook)
-                             (funcall aw--current-op aj-data))
+                             (funcall function aj-data))
                            (throw 'done t))
 
                           (t
@@ -253,33 +257,30 @@ Set mode line to MODE-LINE during the selection process."
 (defun ace-select-window ()
   "Ace select window."
   (interactive)
-  (setq aw--current-op 'aw-switch-to-window)
-  (aw--doit " Ace - Window"))
+  (aw--doit #'aw-switch-to-window " Ace - Window"))
 
 ;;;###autoload
 (defun ace-delete-window ()
   "Ace delete window."
   (interactive)
-  (setq aw--current-op 'aw-delete-window)
-  (aw--doit " Ace - Delete Window"))
+  (aw--doit #'aw-delete-window " Ace - Delete Window"))
 
 ;;;###autoload
 (defun ace-swap-window ()
   "Ace swap window."
   (interactive)
-  (setq aw--current-op 'aw-swap-window)
-  (aw--doit " Ace - Swap Window"))
+  (aw--doit #'aw-swap-window " Ace - Swap Window"))
 
 ;;;###autoload
 (defun ace-maximize-window ()
   "Ace maximize window."
   (interactive)
-  (setq aw--current-op
-        (lambda (aj)
-          (let ((wnd (aj-position-window aj)))
-            (select-window wnd)
-            (delete-other-windows))))
-  (aw--doit " Ace - Maximize Window"))
+  (aw--doit
+   (lambda (aj)
+     (let ((wnd (aj-position-window aj)))
+       (select-window wnd)
+       (delete-other-windows)))
+   " Ace - Maximize Window"))
 
 ;;;###autoload
 (defun ace-window (arg)
