@@ -116,43 +116,6 @@ This hook is set to nil with each call to `ace-window'.")
 (defvar aw--current-op nil
   "A function of one argument to call.")
 
-(defun aw--callback-body (char)
-  (let* ((index (or (cl-position char aw-keys)
-                    (length aw-keys)))
-         (node (nth index (cdr ace-jump-search-tree))))
-    (cond ((null node)
-           (message "No such position candidate.")
-           ;; (ace-jump-done)
-           )
-
-          ((eq (car node) 'branch)
-           (let ((old-tree ace-jump-search-tree))
-             (setq ace-jump-search-tree (cons 'branch (cdr node)))
-             (ace-jump-update-overlay-in-search-tree
-              ace-jump-search-tree aw-keys)
-             (setf (cdr node) nil)
-             (ace-jump-delete-overlay-in-search-tree old-tree)))
-
-          ((eq (car node) 'leaf)
-           (let ((aj-data (overlay-get (cdr node) 'aj-data)))
-             (ace-jump-done)
-             (ace-jump-push-mark)
-             (run-hooks 'ace-jump-mode-before-jump-hook)
-             (funcall aw--current-op aj-data))
-           (run-hooks 'ace-window-end-hook)
-           (run-hooks 'ace-window-end-once-hook)
-           (setq ace-window-end-once-hook)
-           (run-hooks 'ace-jump-mode-end-hook))
-
-          (t
-           (ace-jump-done)
-           (error "[AceJump] Internal error: tree node type is invalid")))))
-
-(defun aw--callback ()
-  "Call `aw--current-op' for the window selected by ace-jump."
-  (interactive)
-  (aw--callback-body (aref (this-command-keys) 0)))
-
 (defun aw--done ()
   (setq ace-jump-query-char nil)
   (setq ace-jump-current-mode nil)
@@ -254,23 +217,36 @@ Set mode line to MODE-LINE during the selection process."
          ;; turn off helm transient map
          (remove-hook 'post-command-hook 'helm--maybe-update-keymap)
          (unwind-protect
-              (let ((char (read-char mode-line)))
-                (aw--callback-body char))
-           (aw--done))
+              (let (char node)
+                (catch 'done
+                  (while t
+                    (setq char (read-char mode-line))
+                    (setq node (nth (or (cl-position char aw-keys) (length aw-keys))
+                                    (cdr ace-jump-search-tree)))
+                    (cond ((null node)
+                           (message "No such position candidate.")
+                           (throw 'done nil))
 
+                          ((eq (car node) 'branch)
+                           (let ((old-tree ace-jump-search-tree))
+                             (setq ace-jump-search-tree (cons 'branch (cdr node)))
+                             (ace-jump-update-overlay-in-search-tree
+                              ace-jump-search-tree aw-keys)
+                             (setf (cdr node)
+                                   nil)
+                             (ace-jump-delete-overlay-in-search-tree old-tree)))
 
-         ;; override the local key map
-         ;; (let ((map (make-keymap)))
-         ;;   (dolist (key-code aw-keys)
-         ;;     (define-key map (make-string 1 key-code) 'aw--callback))
-         ;;   (define-key map [t] 'ace-jump-done)
-         ;;   (if (fboundp 'set-transient-map)
-         ;;       (set-transient-map map)
-         ;;     (set-temporary-overlay-map map)))
+                          ((eq (car node) 'leaf)
+                           (let ((aj-data (overlay-get (cdr node) 'aj-data)))
+                             (ace-jump-done)
+                             (ace-jump-push-mark)
+                             (run-hooks 'ace-jump-mode-before-jump-hook)
+                             (funcall aw--current-op aj-data))
+                           (throw 'done t))
 
-         ;; (add-hook 'mouse-leave-buffer-hook 'ace-jump-done)
-         ;; (add-hook 'kbd-macro-termination-hook 'ace-jump-done)
-         )))))
+                          (t
+                           (error "[AceJump] Internal error: tree node type is invalid"))))))
+           (aw--done)))))))
 
 ;; ——— Interactive —————————————————————————————————————————————————————————————
 ;;;###autoload
