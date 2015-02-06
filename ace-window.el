@@ -148,8 +148,7 @@ Set mode line to MODE-LINE during the selection process."
             ('global 'visible)
             ('frame 'frame)))
          (visual-area-list
-          (sort (aw-list-visual-area)
-                'aw-visual-area<))
+          (sort (aw-list-visual-area) 'aw-visual-area<))
          (visual-area-list
           (if (<= (length visual-area-list) 2)
               visual-area-list
@@ -226,19 +225,20 @@ Set mode line to MODE-LINE during the selection process."
                 (catch 'done
                   (while t
                     (setq char (read-char))
-                    (setq node (nth (or (cl-position char aw-keys) (length aw-keys))
-                                    (cdr ace-jump-search-tree)))
+                    (setq node (cl-position char aw-keys))
+                    (when node
+                      (setq node (nth node (cdr ace-jump-search-tree))))
                     (cond ((null node)
                            (message "No such position candidate.")
                            (throw 'done nil))
 
                           ((eq (car node) 'branch)
                            (let ((old-tree ace-jump-search-tree))
-                             (setq ace-jump-search-tree (cons 'branch (cdr node)))
+                             (setq ace-jump-search-tree
+                                   (cons 'branch (cdr node)))
                              (ace-jump-update-overlay-in-search-tree
                               ace-jump-search-tree aw-keys)
-                             (setf (cdr node)
-                                   nil)
+                             (setf (cdr node) nil)
                              (ace-jump-delete-overlay-in-search-tree old-tree)))
 
                           ((eq (car node) 'leaf)
