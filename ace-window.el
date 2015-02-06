@@ -138,51 +138,33 @@ This hook is set to nil with each call to `ace-window'.")
     (ace-jump-delete-overlay-in-search-tree ace-jump-search-tree)
     (setq ace-jump-search-tree nil)))
 
-(defun aw--doit (function mode-line)
-  "Select a window and call FUNCTION for it.
-FUNCTION should accept a single `aj-position' structure.
-Set mode line to MODE-LINE during the selection process."
-  (let* ((ace-jump-mode-scope aw-scope)
+(defun aw--doit (mode-line)
+  "Return a selected other window.
+Amend MODE-LINE to the mode line for the duration of the selection."
+  (let* ((start-window (selected-window))
+         (ace-jump-mode-scope aw-scope)
          (next-window-scope
           (cl-case aw-scope
             ('global 'visible)
             ('frame 'frame)))
          (visual-area-list
-          (sort (aw-list-visual-area) 'aw-visual-area<))
-         (visual-area-list
-          (if (<= (length visual-area-list) 2)
-              visual-area-list
-            (cl-remove-if
-             (lambda (va)
-               (let ((b (aj-visual-area-buffer va)))
-                 (with-current-buffer b
-                   (and buffer-read-only
-                        (= 0 (buffer-size b))))))
-             visual-area-list))))
+          (cl-remove-if
+           (lambda (va)
+             (let ((b (aj-visual-area-buffer va))
+                   (w (aj-visual-area-window va)))
+               (or (with-current-buffer b
+                     (and buffer-read-only
+                          (= 0 (buffer-size b))))
+                   (aw-ignored-p w))))
+           (sort (aw-list-visual-area) 'aw-visual-area<))))
     (cl-case (length visual-area-list)
-      (0
-       (error "Nowhere to switch to"))
+      (0)
       (1
-       (if (aw-ignored-p (selected-window))
-           (other-window 1)
-         ;; don't get stuck in an empty read-only buffer
-         (select-window (aj-visual-area-window (car visual-area-list)))))
+       ;; don't get stuck in an empty read-only buffer
+       (select-window (aj-visual-area-window (car visual-area-list))))
       (2
-       (if (aw-ignored-p (selected-window))
-           (other-window 1)
-         (let ((sw (selected-window))
-               (w (next-window nil nil next-window-scope)))
-           (while (aw-ignored-p w)
-             (select-window w)
-             (setq w (next-window nil nil next-window-scope)))
-           (select-window sw)
-           (funcall function
-                    (make-aj-position
-                     :offset 0
-                     :visual-area (make-aj-visual-area
-                                   :buffer (window-buffer w)
-                                   :window w
-                                   :frame (window-frame w)))))))
+       (select-window
+        (next-window nil nil next-window-scope)))
       (t
        (let ((candidate-list
               (mapcar (lambda (va)
@@ -246,42 +228,44 @@ Set mode line to MODE-LINE during the selection process."
                              (ace-jump-done)
                              (ace-jump-push-mark)
                              (run-hooks 'ace-jump-mode-before-jump-hook)
-                             (funcall function aj-data))
+                             (select-window (aj-position-window aj-data)))
                            (throw 'done t))
 
                           (t
                            (error "[AceJump] Internal error: tree node type is invalid"))))))
-           (aw--done)))))))
+           (aw--done)))))
+    (prog1 (selected-window)
+      (select-window start-window))))
 
 ;; ——— Interactive —————————————————————————————————————————————————————————————
 ;;;###autoload
 (defun ace-select-window ()
   "Ace select window."
   (interactive)
-  (aw--doit #'aw-switch-to-window " Ace - Window"))
+  (aw-switch-to-window
+   (aw--doit " Ace - Window")))
 
 ;;;###autoload
 (defun ace-delete-window ()
   "Ace delete window."
   (interactive)
-  (aw--doit #'aw-delete-window " Ace - Delete Window"))
+  (aw-delete-window
+   (aw--doit " Ace - Delete Window")))
 
 ;;;###autoload
 (defun ace-swap-window ()
   "Ace swap window."
   (interactive)
-  (aw--doit #'aw-swap-window " Ace - Swap Window"))
+  (aw-swap-window
+   (aw--doit " Ace - Swap Window")))
 
 ;;;###autoload
 (defun ace-maximize-window ()
   "Ace maximize window."
   (interactive)
-  (aw--doit
-   (lambda (aj)
-     (let ((wnd (aj-position-window aj)))
-       (select-window wnd)
-       (delete-other-windows)))
-   " Ace - Maximize Window"))
+  (select-window
+   (aw--doit " Ace - Maximize Window"))
+  (delete-other-windows))
 
 ;;;###autoload
 (defun ace-window (arg)
@@ -326,10 +310,9 @@ Windows are numbered top down, left to right."
           ((< (cadr e1) (cadr e2))
            t))))
 
-(defun aw-switch-to-window (aj-data)
-  "Switch to the window of `aj-position' structure AJ-DATA."
-  (let ((frame (aj-position-frame aj-data))
-        (window (aj-position-window aj-data)))
+(defun aw-switch-to-window (window)
+  "Switch to the window WINDOW."
+  (let ((frame (window-frame window)))
     (when (and (frame-live-p frame)
                (not (eq frame (selected-frame))))
       (select-frame-set-input-focus frame))
@@ -337,10 +320,9 @@ Windows are numbered top down, left to right."
         (select-window window)
       (error "Bad aj-data, aw-delete-window: %S" aj-data))))
 
-(defun aw-delete-window (aj-data)
-  "Delete window of `aj-position' structure AJ-DATA."
-  (let ((frame (aj-position-frame aj-data))
-        (window (aj-position-window aj-data)))
+(defun aw-delete-window (window)
+  "Delete window WINDOW."
+  (let ((frame (window-frame window)))
     (when (and (frame-live-p frame)
                (not (eq frame (selected-frame))))
       (select-frame-set-input-focus (window-frame window)))
@@ -350,8 +332,8 @@ Windows are numbered top down, left to right."
           (delete-window window)
         (error "Bad aj-data, aw-delete-window: %S" aj-data)))))
 
-(defun aw-swap-window (aj-data)
-  "Swap buffers of current window and that of `aj-position' structure AJ-DATA."
+(defun aw-swap-window (window)
+  "Swap buffers of current window and WINDOW."
   (cl-labels ((swap-windows (window1 window2)
                 "Swap the buffers of WINDOW1 and WINDOW2."
                 (let ((buffer1 (window-buffer window1))
@@ -359,8 +341,7 @@ Windows are numbered top down, left to right."
                   (set-window-buffer window1 buffer2)
                   (set-window-buffer window2 buffer1)
                   (select-window window2))))
-    (let ((frame (aj-position-frame aj-data))
-          (window (aj-position-window aj-data))
+    (let ((frame (window-frame window))
           (this-window (selected-window)))
       (when (and (frame-live-p frame)
                  (not (eq frame (selected-frame))))
