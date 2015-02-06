@@ -120,6 +120,7 @@ This hook is set to nil with each call to `ace-window'.")
    (ace-jump-list-visual-area)))
 
 (defun aw--done ()
+  "Clean up ace-jump overlays."
   (setq ace-jump-query-char nil)
   (setq ace-jump-current-mode nil)
 
@@ -224,7 +225,7 @@ Set mode line to MODE-LINE during the selection process."
               (let (char node)
                 (catch 'done
                   (while t
-                    (setq char (read-char mode-line))
+                    (setq char (read-char))
                     (setq node (nth (or (cl-position char aw-keys) (length aw-keys))
                                     (cdr ace-jump-search-tree)))
                     (cond ((null node)
