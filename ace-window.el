@@ -121,10 +121,8 @@ This hook is set to nil with each call to `ace-window'.")
 
 (defun aw--done ()
   "Clean up ace-jump overlays."
-  (setq ace-jump-query-char nil)
+  ;; clean up mode line
   (setq ace-jump-current-mode nil)
-
-  ;; clean the status line
   (setq ace-jump-mode nil)
   (force-mode-line-update)
 
@@ -160,7 +158,6 @@ Amend MODE-LINE to the mode line for the duration of the selection."
     (cl-case (length visual-area-list)
       (0)
       (1
-       ;; don't get stuck in an empty read-only buffer
        (select-window (aj-visual-area-window (car visual-area-list))))
       (2
        (select-window
@@ -203,11 +200,10 @@ Amend MODE-LINE to the mode line for the duration of the selection."
          ;; turn off helm transient map
          (remove-hook 'post-command-hook 'helm--maybe-update-keymap)
          (unwind-protect
-              (let (char node)
+              (let (node)
                 (catch 'done
                   (while t
-                    (setq char (read-char))
-                    (setq node (cl-position char aw-keys))
+                    (setq node (cl-position (read-char) aw-keys))
                     (when node
                       (setq node (nth node (cdr ace-jump-search-tree))))
                     (cond ((null node)
@@ -225,9 +221,6 @@ Amend MODE-LINE to the mode line for the duration of the selection."
 
                           ((eq (car node) 'leaf)
                            (let ((aj-data (overlay-get (cdr node) 'aj-data)))
-                             (ace-jump-done)
-                             (ace-jump-push-mark)
-                             (run-hooks 'ace-jump-mode-before-jump-hook)
                              (select-window (aj-position-window aj-data)))
                            (throw 'done t))
 
@@ -318,7 +311,7 @@ Windows are numbered top down, left to right."
       (select-frame-set-input-focus frame))
     (if (window-live-p window)
         (select-window window)
-      (error "Bad aj-data, aw-delete-window: %S" aj-data))))
+      (error "Got a dead window %S" window))))
 
 (defun aw-delete-window (window)
   "Delete window WINDOW."
@@ -330,7 +323,7 @@ Windows are numbered top down, left to right."
         (delete-frame frame)
       (if (window-live-p window)
           (delete-window window)
-        (error "Bad aj-data, aw-delete-window: %S" aj-data)))))
+        (error "Got a dead window %S" window)))))
 
 (defun aw-swap-window (window)
   "Swap buffers of current window and WINDOW."
