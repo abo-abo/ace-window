@@ -35,7 +35,7 @@
 ;; window.  Note that unlike `ace-jump-mode', the point position will
 ;; not be changed: only current window focus changes.
 ;;
-;; To setup this package, just add to your ~.emacs:
+;; To setup this package, just add to your .emacs:
 ;;
 ;;    (global-set-key (kbd "M-p") 'ace-window)
 ;;
@@ -47,6 +47,11 @@
 ;;
 ;; This way they're all on the home row, although the intuitive
 ;; ordering is lost.
+;;
+;; If you don't want the gray background that makes the red selection
+;; characters stand out more, set this:
+;;
+;;    (setq aw-background nil)
 ;;
 ;; When prefixed with one `universal-argument', instead of switching
 ;; to selected window, the selected window is swapped with current one.
@@ -136,7 +141,7 @@ This hook is set to nil with each call to `ace-window'.")
     (ace-jump-delete-overlay-in-search-tree ace-jump-search-tree)
     (setq ace-jump-search-tree nil)))
 
-(defun aw--doit (mode-line)
+(defun aw-select (mode-line)
   "Return a selected other window.
 Amend MODE-LINE to the mode line for the duration of the selection."
   (let* ((start-window (selected-window))
@@ -236,28 +241,28 @@ Amend MODE-LINE to the mode line for the duration of the selection."
   "Ace select window."
   (interactive)
   (aw-switch-to-window
-   (aw--doit " Ace - Window")))
+   (aw-select " Ace - Window")))
 
 ;;;###autoload
 (defun ace-delete-window ()
   "Ace delete window."
   (interactive)
   (aw-delete-window
-   (aw--doit " Ace - Delete Window")))
+   (aw-select " Ace - Delete Window")))
 
 ;;;###autoload
 (defun ace-swap-window ()
   "Ace swap window."
   (interactive)
   (aw-swap-window
-   (aw--doit " Ace - Swap Window")))
+   (aw-select " Ace - Swap Window")))
 
 ;;;###autoload
 (defun ace-maximize-window ()
   "Ace maximize window."
   (interactive)
   (select-window
-   (aw--doit " Ace - Maximize Window"))
+   (aw-select " Ace - Maximize Window"))
   (delete-other-windows))
 
 ;;;###autoload
