@@ -166,7 +166,10 @@ Amend MODE-LINE to the mode line for the duration of the selection."
        (select-window (aj-visual-area-window (car visual-area-list))))
       (2
        (select-window
-        (next-window nil nil next-window-scope)))
+        (next-window nil nil next-window-scope))
+       (while (aw-ignored-p (selected-window))
+         (select-window
+          (next-window nil nil next-window-scope))))
       (t
        (let ((candidate-list
               (mapcar (lambda (va)
