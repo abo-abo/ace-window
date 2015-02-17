@@ -79,7 +79,7 @@
           (const :tag "global" global)
           (const :tag "frame" frame)))
 
-(defcustom aw-ignored-buffers '("*Calc Trail*")
+(defcustom aw-ignored-buffers '("*Calc Trail*" "*LV*")
   "List of buffers to ignore when selecting window."
   :group 'ace-window)
 
