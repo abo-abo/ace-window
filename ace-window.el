@@ -62,7 +62,7 @@
 ;;; Code:
 (require 'ace-jump-mode)
 
-;; ——— Customization ———————————————————————————————————————————————————————————
+;;* Customization
 (defgroup ace-window nil
   "Quickly switch current window."
   :group 'convenience
@@ -94,6 +94,7 @@ Use M-0 `ace-window' to toggle this value."
     '((t (:inherit ace-jump-face-foreground)))
   "Face for each window's leading char.")
 
+;;* Implementation
 (defun aw-ignored-p (window)
   "Return t if WINDOW should be ignored."
   (and aw-ignore-on
@@ -243,7 +244,7 @@ Amend MODE-LINE to the mode line for the duration of the selection."
     (prog1 (selected-window)
       (select-window start-window))))
 
-;; ——— Interactive —————————————————————————————————————————————————————————————
+;;* Interactive
 ;;;###autoload
 (defun ace-select-window ()
   "Ace select window."
@@ -297,7 +298,7 @@ window."
     (16 (ace-delete-window))
     (t (ace-select-window))))
 
-;; ——— Utility —————————————————————————————————————————————————————————————————
+;;* Utility
 (defun aw-visual-area< (va1 va2)
   "Return true if visual area VA1 is less than VA2.
 This is determined by their respective window coordinates.
