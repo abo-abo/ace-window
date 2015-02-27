@@ -1,12 +1,11 @@
-;;; ace-window.el --- Quickly switch windows using `ace-jump-mode'. -*- lexical-binding: t -*-
+;;; ace-window.el --- Quickly switch windows. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2014 Oleh Krehel
+;; Copyright (C) 2014-2015 Oleh Krehel
 
 ;; Author: Oleh Krehel <ohwoeowho@gmail.com>
 ;; URL: https://github.com/abo-abo/ace-window
-;; Version: 0.7.0
-;; Package-Requires: ((ace-jump-mode "2.0"))
-;; Keywords: cursor, window, location
+;; Version: 0.8.0
+;; Keywords: window, location
 
 ;; This file is not part of GNU Emacs
 
@@ -25,15 +24,11 @@
 
 ;;; Commentary:
 ;;
-;; This package uses `ace-jump-mode' machinery to switch between
-;; windows.
-;;
 ;; The main function, `ace-window' is meant to replace `other-window'.
 ;; If fact, when there are only two windows present, `other-window' is
 ;; called.  If there are more, each window will have its first
 ;; character highlighted.  Pressing that character will switch to that
-;; window.  Note that unlike `ace-jump-mode', the point position will
-;; not be changed: only current window focus changes.
+;; window.
 ;;
 ;; To setup this package, just add to your .emacs:
 ;;
@@ -60,7 +55,7 @@
 ;; deleted instead.
 
 ;;; Code:
-(require 'ace-jump-mode)
+(require 'avy)
 
 ;;* Customization
 (defgroup ace-window nil
@@ -91,8 +86,15 @@ Use M-0 `ace-window' to toggle this value."
   :type 'boolean)
 
 (defface aw-leading-char-face
-    '((t (:inherit ace-jump-face-foreground)))
+    '((((class color)) (:foreground "red"))
+      (((background dark)) (:foreground "gray100"))
+      (((background light)) (:foreground "gray0"))
+      (t (:foreground "gray100" :underline nil)))
   "Face for each window's leading char.")
+
+(defface aw-background-face
+  '((t (:foreground "gray40")))
+  "Face for whole window background during selection.")
 
 ;;* Implementation
 (defun aw-ignored-p (window)
@@ -101,148 +103,151 @@ Use M-0 `ace-window' to toggle this value."
        (member (buffer-name (window-buffer window))
                aw-ignored-buffers)))
 
-(defun aw-list-visual-area ()
-  "Forward to `ace-jump-list-visual-area', removing invisible frames."
-  (cl-remove-if
-   (lambda (x)
-     (let ((f (aj-visual-area-frame x)))
-       (or (not (and (frame-live-p f)
-                     (frame-visible-p f)))
-           (string= "initial_terminal" (terminal-name f))
-           (aw-ignored-p (aj-visual-area-window x)))))
-   (ace-jump-list-visual-area)))
+(defun aw-window-list ()
+  "Return the list of interesting windows."
+  (sort
+   (cl-remove-if
+    (lambda (w)
+      (let ((f (window-frame w))
+            (b (window-buffer w)))
+        (or (not (and (frame-live-p f)
+                      (frame-visible-p f)))
+            (string= "initial_terminal" (terminal-name f))
+            (aw-ignored-p w)
+            (with-current-buffer b
+              (and buffer-read-only
+                   (= 0 (buffer-size b)))))))
+    (cl-case aw-scope
+      (global
+       (cl-mapcan #'window-list (frame-list)))
+      (frame
+       (window-list))
+      (t
+       (error "Invalid `aw-scope': %S" aw-scope))))
+   'aw-window<))
+
+(defvar aw-overlays-lead nil
+  "Hold overlays for leading chars.")
+
+(defvar aw-overlays-back nil
+  "Hold overlays for when `aw-background' is t.")
+
+(defvar ace-window-mode nil
+  "Minor mode during the selection process.")
+
+;; register minor mode
+(or (assq 'ace-window-mode minor-mode-alist)
+    (nconc minor-mode-alist
+           (list '(ace-window-mode ace-window-mode))))
 
 (defun aw--done ()
-  "Clean up ace-jump overlays."
-  ;; clean up mode line
-  (setq ace-jump-current-mode nil)
-  (setq ace-jump-mode nil)
+  "Clean up mode line and overlays."
+  ;; mode line
+  (setq ace-window-mode nil)
   (force-mode-line-update)
+  ;; background
+  (mapc #'delete-overlay aw-overlays-back)
+  (setq aw-overlays-back nil)
+  (aw--remove-leading-chars))
 
-  ;; delete background overlay
-  (loop for ol in ace-jump-background-overlay-list
-     do (delete-overlay ol))
-  (setq ace-jump-background-overlay-list nil)
+(defun aw--lead-overlay (char pt wnd)
+  "Create an overlay with CHAR at PT in WND."
+  (let* ((ol (make-overlay pt (1+ pt) (window-buffer wnd)))
+         (old-str (with-selected-window wnd
+                    (buffer-substring pt (1+ pt))))
+         (new-str
+          (format "%c%s"
+                  char
+                  (cond
+                    ((string-equal old-str "\t")
+                     (make-string (1- tab-width) ?\ ))
+                    ((string-equal old-str "\n")
+                     "\n")
+                    (t
+                     (make-string
+                      (max 0 (1- (string-width old-str)))
+                      ?\ ))))))
+    (overlay-put ol 'face 'aw-leading-char-face)
+    (overlay-put ol 'window wnd)
+    (overlay-put ol 'display new-str)
+    (push ol aw-overlays-lead)))
 
-  ;; delete overlays in search tree
-  (when ace-jump-search-tree
-    (ace-jump-delete-overlay-in-search-tree ace-jump-search-tree)
-    (setq ace-jump-search-tree nil)))
+(defun aw--make-leading-chars (tree &optional char)
+  "Create leading char overlays for TREE.
+CHAR is used to store the overlay char in the recursion."
+  (dolist (br tree)
+    (if (integerp (cadr br))
+        (aw--lead-overlay (or char (car br)) (cadr br) (cddr br))
+      (aw--make-leading-chars (cdr br) (or char (car br))))))
+
+(defun aw--remove-leading-chars ()
+  "Remove leading char overlays."
+  (mapc #'delete-overlay aw-overlays-lead)
+  (setq aw-overlays-lead nil))
+
+(defun aw--make-backgrounds (wnd-list)
+  "Create a dim background overlay for each window on WND-LIST."
+  (when aw-background
+    (setq aw-overlays-back
+          (mapcar (lambda (w)
+                    (let ((ol (make-overlay
+                               (window-start w)
+                               (window-end w)
+                               (window-buffer w))))
+                      (overlay-put ol 'face 'aw-background-face)
+                      ol))
+                  wnd-list))))
 
 (defun aw-select (mode-line)
   "Return a selected other window.
 Amend MODE-LINE to the mode line for the duration of the selection."
-  (let* ((start-window (selected-window))
-         (ace-jump-mode-scope aw-scope)
-         (next-window-scope
-          (cl-case aw-scope
-            ('global 'visible)
-            ('frame 'frame)))
-         (visual-area-list
-          (cl-remove-if
-           (lambda (va)
-             (let ((b (aj-visual-area-buffer va))
-                   (w (aj-visual-area-window va)))
-               (or (with-current-buffer b
-                     (and buffer-read-only
-                          (= 0 (buffer-size b))))
-                   (aw-ignored-p w))))
-           (sort (aw-list-visual-area) 'aw-visual-area<))))
-    (cl-case (length visual-area-list)
-      (0)
+  (let ((start-window (selected-window))
+        (next-window-scope (cl-case aw-scope
+                             ('global 'visible)
+                             ('frame 'frame)))
+        (wnd-list (aw-window-list))
+        final-window)
+    (cl-case (length wnd-list)
+      (0
+       start-window)
       (1
-       (select-window (aj-visual-area-window (car visual-area-list))))
+       (car wnd-list))
       (2
-       (select-window
-        (next-window nil nil next-window-scope))
-       (while (aw-ignored-p (selected-window))
-         (select-window
-          (next-window nil nil next-window-scope))))
+       (setq final-window (next-window nil nil next-window-scope))
+       (while (and (aw-ignored-p final-window)
+                   (not (equal final-window start-window)))
+         (setq final-window (next-window final-window nil next-window-scope)))
+       final-window)
       (t
-       (let ((candidate-list
-              (mapcar (lambda (va)
-                        (let ((b (aj-visual-area-buffer va)))
-                          ;; ace-jump-mode can't jump if the buffer is empty
-                          (when (= 0 (buffer-size b))
-                            (with-current-buffer b
-                              (insert " "))))
-                        (make-aj-position
-                         :offset
-                         (aw-offset (aj-visual-area-window va))
-                         :visual-area va))
-                      visual-area-list)))
-         ;; create background for each visual area
-         (if aw-background
-             (setq ace-jump-background-overlay-list
-                   (loop for va in visual-area-list
-                      collect (let* ((w (aj-visual-area-window va))
-                                     (b (aj-visual-area-buffer va))
-                                     (ol (make-overlay (window-start w)
-                                                       (window-end w)
-                                                       b)))
-                                (overlay-put ol 'face 'ace-jump-face-background)
-                                ol))))
-         ;; construct search tree and populate overlay into tree
-         (setq ace-jump-search-tree
-               (ace-jump-tree-breadth-first-construct
-                (length candidate-list)
-                (length aw-keys)))
-         (let ((s (list ace-jump-search-tree)))
-           (while s
-             (let ((node (pop s)))
-               (cond
-                 ((eq (car node) 'branch)
-                  ;; push all child node into stack
-                  (setq s (append (cdr node) s)))
-                 ((eq (car node) 'leaf)
-                  (let* ((p (pop candidate-list))
-                         (o (aj-position-offset p))
-                         (ol (make-overlay
-                              o (1+ o)
-                              (aj-position-buffer p))))
-                    ;; update leaf node to remember the ol
-                    (setf (cdr node) ol)
-                    (overlay-put ol 'face 'aw-leading-char-face)
-                    (overlay-put ol 'window (aj-position-window p))
-                    (overlay-put ol 'aj-data p)))
-                 (t
-                  (message "Failure in traversal"))))))
-         (ace-jump-update-overlay-in-search-tree
-          ace-jump-search-tree aw-keys)
-         (setq ace-jump-mode mode-line)
+       (let* ((candidate-list
+               (mapcar (lambda (wnd)
+                         ;; can't jump if the buffer is empty
+                         (with-current-buffer (window-buffer wnd)
+                           (when (= 0 (buffer-size))
+                             (insert " ")))
+                         (cons (aw-offset wnd) wnd))
+                       wnd-list))
+              (avy-tree (avy-read candidate-list
+                                  aw-keys)))
+         (aw--make-backgrounds wnd-list)
+         (setq ace-window-mode mode-line)
          (force-mode-line-update)
          ;; turn off helm transient map
          (remove-hook 'post-command-hook 'helm--maybe-update-keymap)
-         (unwind-protect
-              (let (node)
-                (catch 'done
-                  (while t
-                    (setq node (cl-position (read-char) aw-keys))
-                    (when node
-                      (setq node (nth node (cdr ace-jump-search-tree))))
-                    (cond ((null node)
-                           (message "No such position candidate.")
-                           (throw 'done nil))
-
-                          ((eq (car node) 'branch)
-                           (let ((old-tree ace-jump-search-tree))
-                             (setq ace-jump-search-tree
-                                   (cons 'branch (cdr node)))
-                             (ace-jump-update-overlay-in-search-tree
-                              ace-jump-search-tree aw-keys)
-                             (setf (cdr node) nil)
-                             (ace-jump-delete-overlay-in-search-tree old-tree)))
-
-                          ((eq (car node) 'leaf)
-                           (let ((aj-data (overlay-get (cdr node) 'aj-data)))
-                             (select-window (aj-position-window aj-data)))
-                           (throw 'done t))
-
-                          (t
-                           (error "[AceJump] Internal error: tree node type is invalid"))))))
-           (aw--done)))))
-    (prog1 (selected-window)
-      (select-window start-window))))
+         (or (catch 'done
+               (unwind-protect
+                    (while avy-tree
+                      (aw--make-leading-chars avy-tree)
+                      (let ((char (read-char))
+                            branch)
+                        (aw--remove-leading-chars)
+                        (if (setq branch (assoc char avy-tree))
+                            (when (windowp (cdr (setq avy-tree (cdr branch))))
+                              (throw 'done (cdr avy-tree)))
+                          (message "No such position candidate.")
+                          (throw 'done nil))))
+                 (aw--done)))
+             start-window))))))
 
 ;;* Interactive
 ;;;###autoload
@@ -276,7 +281,7 @@ Amend MODE-LINE to the mode line for the duration of the selection."
 
 ;;;###autoload
 (defun ace-window (arg)
-  "Select a window with function `ace-jump-mode'.
+  "Select a window.
 Perform an action based on ARG described below.
 
 By default, behaves like extended `other-window'.
@@ -299,14 +304,14 @@ window."
     (t (ace-select-window))))
 
 ;;* Utility
-(defun aw-visual-area< (va1 va2)
-  "Return true if visual area VA1 is less than VA2.
+(defun aw-window< (wnd1 wnd2)
+  "Return true if WND1 is less than WND2.
 This is determined by their respective window coordinates.
 Windows are numbered top down, left to right."
-  (let ((f1 (aj-visual-area-frame va1))
-        (f2 (aj-visual-area-frame va2))
-        (e1 (window-edges (aj-visual-area-window va1)))
-        (e2 (window-edges (aj-visual-area-window va2))))
+  (let ((f1 (window-frame wnd1))
+        (f2 (window-frame wnd2))
+        (e1 (window-edges wnd1))
+        (e2 (window-edges wnd2)))
     (cond ((string< (frame-parameter f1 'window-id)
                     (frame-parameter f2 'window-id))
            t)
