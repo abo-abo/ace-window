@@ -150,9 +150,12 @@ Use M-0 `ace-window' to toggle this value."
   (setq aw-overlays-back nil)
   (aw--remove-leading-chars))
 
-(defun aw--lead-overlay (char pt wnd)
-  "Create an overlay with CHAR at PT in WND."
-  (let* ((ol (make-overlay pt (1+ pt) (window-buffer wnd)))
+(defun aw--lead-overlay (char leaf)
+  "Create an overlay with CHAR at LEAF.
+LEAF is (PT . WND)."
+  (let* ((pt (car leaf))
+         (wnd (cdr leaf))
+         (ol (make-overlay pt (1+ pt) (window-buffer wnd)))
          (old-str (with-selected-window wnd
                     (buffer-substring pt (1+ pt))))
          (new-str
@@ -171,14 +174,6 @@ Use M-0 `ace-window' to toggle this value."
     (overlay-put ol 'window wnd)
     (overlay-put ol 'display new-str)
     (push ol aw-overlays-lead)))
-
-(defun aw--make-leading-chars (tree &optional char)
-  "Create leading char overlays for TREE.
-CHAR is used to store the overlay char in the recursion."
-  (dolist (br tree)
-    (if (integerp (cadr br))
-        (aw--lead-overlay (or char (car br)) (cadr br) (cddr br))
-      (aw--make-leading-chars (cdr br) (or char (car br))))))
 
 (defun aw--remove-leading-chars ()
   "Remove leading char overlays."
@@ -219,35 +214,24 @@ Amend MODE-LINE to the mode line for the duration of the selection."
          (setq final-window (next-window final-window nil next-window-scope)))
        final-window)
       (t
-       (let* ((candidate-list
-               (mapcar (lambda (wnd)
-                         ;; can't jump if the buffer is empty
-                         (with-current-buffer (window-buffer wnd)
-                           (when (= 0 (buffer-size))
-                             (insert " ")))
-                         (cons (aw-offset wnd) wnd))
-                       wnd-list))
-              (avy-tree (avy-read candidate-list
-                                  aw-keys)))
+       (let ((candidate-list
+              (mapcar (lambda (wnd)
+                        ;; can't jump if the buffer is empty
+                        (with-current-buffer (window-buffer wnd)
+                          (when (= 0 (buffer-size))
+                            (insert " ")))
+                        (cons (aw-offset wnd) wnd))
+                      wnd-list)))
          (aw--make-backgrounds wnd-list)
          (setq ace-window-mode mode-line)
          (force-mode-line-update)
          ;; turn off helm transient map
          (remove-hook 'post-command-hook 'helm--maybe-update-keymap)
-         (or (catch 'done
-               (unwind-protect
-                    (while avy-tree
-                      (aw--make-leading-chars avy-tree)
-                      (let ((char (read-char))
-                            branch)
-                        (aw--remove-leading-chars)
-                        (if (setq branch (assoc char avy-tree))
-                            (when (windowp (cdr (setq avy-tree (cdr branch))))
-                              (throw 'done (cdr avy-tree)))
-                          (message "No such position candidate.")
-                          (throw 'done nil))))
-                 (aw--done)))
-             start-window))))))
+         (unwind-protect (or (cdr (avy-read (avy-tree candidate-list aw-keys)
+                                            #'aw--lead-overlay
+                                            #'aw--remove-leading-chars))
+                             start-window)
+           (aw--done)))))))
 
 ;;* Interactive
 ;;;###autoload
