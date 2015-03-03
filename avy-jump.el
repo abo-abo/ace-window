@@ -168,19 +168,10 @@ LEAF is ((BEG . END) . WND)."
 (defun avi-goto-word-0 ()
   "Jump to a word start in current window."
   (interactive)
-  (let ((we (window-end (selected-window) t))
-        (avi-keys (number-sequence ?a ?z))
-        candidates)
-    (save-excursion
-      (goto-char (window-start))
-      (while (< (point) we)
-        (forward-word 2)
-        (forward-word -1)
-        (push (cons (point) (selected-window))
-              candidates)))
+  (let* ((avi-keys (number-sequence ?a ?z))
+         (candidates (avi--regex-candidates "\\b\\sw")))
     (avi--goto
-     (avi--process (nreverse candidates)
-                   #'avi--overlay-pre))))
+     (avi--process candidates #'avi--overlay-pre))))
 
 ;;;###autoload
 (defun avi-goto-word-1 ()
@@ -188,18 +179,11 @@ LEAF is ((BEG . END) . WND)."
 Read one char with which the word should start."
   (interactive)
   (let ((candidates (avi--regex-candidates
-                     (string (read-char "char: "))
-                     (selected-window))))
-    (save-excursion
-      (setq candidates (cl-remove-if-not
-                        (lambda (x)
-                          (goto-char (caar x))
-                          (looking-at "\\b"))
-                        candidates)))
+                     (concat
+                      "\\b"
+                      (string (read-char "char: "))))))
     (avi--goto
-     (avi--process
-      candidates
-      #'avi--overlay-pre))))
+     (avi--process candidates #'avi--overlay-pre))))
 
 (defun avi--line ()
   "Select line in current window."
