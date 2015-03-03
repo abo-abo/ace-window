@@ -85,6 +85,12 @@ Use M-0 `ace-window' to toggle this value."
   "When t, `ace-window' will dim out all buffers temporarily when used.'."
   :type 'boolean)
 
+(defcustom aw-leading-char-style 'char
+  "Style of the leading char overlay."
+  :type '(choice
+          (const :tag "single char" 'char)
+          (const :tag "full path" 'path)))
+
 (defface aw-leading-char-face
     '((((class color)) (:foreground "red"))
       (((background dark)) (:foreground "gray100"))
@@ -150,8 +156,8 @@ Use M-0 `ace-window' to toggle this value."
   (setq aw-overlays-back nil)
   (aw--remove-leading-chars))
 
-(defun aw--lead-overlay (char leaf)
-  "Create an overlay with CHAR at LEAF.
+(defun aw--lead-overlay (path leaf)
+  "Create an overlay using PATH at LEAF.
 LEAF is (PT . WND)."
   (let* ((pt (car leaf))
          (wnd (cdr leaf))
@@ -159,17 +165,23 @@ LEAF is (PT . WND)."
          (old-str (with-selected-window wnd
                     (buffer-substring pt (1+ pt))))
          (new-str
-          (format "%c%s"
-                  char
-                  (cond
-                    ((string-equal old-str "\t")
-                     (make-string (1- tab-width) ?\ ))
-                    ((string-equal old-str "\n")
-                     "\n")
-                    (t
-                     (make-string
-                      (max 0 (1- (string-width old-str)))
-                      ?\ ))))))
+          (concat
+           (cl-case aw-leading-char-style
+             (char
+              (apply #'string (last path)))
+             (path
+              (apply #'string (reverse path)))
+             (t
+              (error "Bad `aw-leading-char-style': %S"
+                     aw-leading-char-style)))
+           (cond ((string-equal old-str "\t")
+                  (make-string (1- tab-width) ?\ ))
+                 ((string-equal old-str "\n")
+                  "\n")
+                 (t
+                  (make-string
+                   (max 0 (1- (string-width old-str)))
+                   ?\ ))))))
     (overlay-put ol 'face 'aw-leading-char-face)
     (overlay-put ol 'window wnd)
     (overlay-put ol 'display new-str)
