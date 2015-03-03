@@ -75,16 +75,16 @@ POS is either a position or (BEG . END)."
                       #'aw--remove-leading-chars))))
     (aw--done)))
 
-(defun avi--regex-candidates (regex &optional wnd)
+(defun avi--regex-candidates (regex &optional wnd beg end)
   "Return all elements that match REGEX in WND.
 Each element of the list is ((BEG . END) . WND)."
   (setq wnd (or wnd (selected-window)))
-  (let ((we (window-end (selected-window) t))
+  (let ((we (or end (window-end (selected-window) t)))
         candidates)
     (save-window-excursion
       (select-window wnd)
       (save-excursion
-        (goto-char (window-start))
+        (goto-char (or beg (window-start)))
         (while (re-search-forward regex we t)
           (push (cons (cons (match-beginning 0)
                             (match-end 0))
