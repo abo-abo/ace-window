@@ -97,7 +97,8 @@ Each element of the list is ((BEG . END) . WND)."
         (old-str (with-selected-window wnd
                    (buffer-substring pt (1+ pt)))))
     (when avi-background
-      (propertize old-str 'face 'aw-background-face))
+      (setq old-str (propertize
+                     old-str 'face 'aw-background-face)))
     (overlay-put ol 'window wnd)
     (overlay-put ol 'display (concat str old-str))
     (push ol aw-overlays-lead)))
