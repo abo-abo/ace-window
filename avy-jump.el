@@ -21,92 +21,154 @@
 
 ;;; Commentary:
 ;;
-;; This package offers various commands for navigating to things using `avy', such as
-;; `avy-jump-char', `avy-double-char', and `avy-jump-line'.
+;; This package offers various commands for navigating to things using `avy'.
+;; They are in the "Commands" outline.
 
 ;;; Code:
+;;* Requires
 (require 'avy)
 (require 'ace-window)
 
+;;* Customization
 (defgroup avy-jump nil
   "Jump to things tree-style."
   :group 'convenience
-  :prefix "avy-")
+  :prefix "avi-")
 
-(defcustom avy-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l)
+(defcustom avi-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l)
   "Keys for jumping.")
 
-(defun avy--goto (x)
-  "Goto X.
-X is (POSITION . WINDOW)."
-  (select-window (cdr x))
-  (goto-char (car x)))
+(defcustom avi-background nil
+  "When non-nil, a gray background will be added during the selection."
+  :type 'boolean)
 
-(defun avy--process (candidates action &optional nobackground)
-  "Select one of CANDIDATES using `avy-read'.
-Call ACTION on that candidate."
+(defface avi-lead-face
+  '((t (:foreground "white" :background "#e52b50")))
+  "Face used for the leading chars.")
+
+;;* Internals
+(defun avi--goto (x)
+  "Goto X.
+X is (POS . WND)
+POS is either a position or (BEG . END)."
+  (if (null x)
+      (message "zero candidates")
+    (select-window (cdr x))
+    (let ((pt (car x)))
+      (when (consp pt)
+        (setq pt (car pt)))
+      (goto-char pt))))
+
+(defun avi--process (candidates overlay-fn)
+  "Select one of CANDIDATES using `avy-read'."
   (unwind-protect
-       (let ((aw-background (not nobackground)))
-         (aw--make-backgrounds (list (selected-window)))
+       (let ((aw-background avi-background))
          (cl-case (length candidates)
            (0
-            (message "zero candidates"))
+            nil)
            (1
-            (funcall action (car candidates)))
+            (car candidates))
            (t
-            (funcall
-             action
-             (avy-read (avy-tree candidates avy-keys)
-                       #'aw--lead-overlay
-                       #'aw--remove-leading-chars)))))
+            (aw--make-backgrounds (list (selected-window)))
+            (avy-read (avy-tree candidates avi-keys)
+                      overlay-fn
+                      #'aw--remove-leading-chars))))
     (aw--done)))
 
-(defun avy--regex-candidates (regex &optional wnd)
+(defun avi--regex-candidates (regex &optional wnd)
   "Return all elements that match REGEX in WND.
-Each element of the list is (POSITION . WND)."
-  (let ((we (window-end))
+Each element of the list is ((BEG . END) . WND)."
+  (setq wnd (or wnd (selected-window)))
+  (let ((we (window-end (selected-window) t))
         candidates)
-    (setq wnd (or wnd (selected-window)))
     (save-window-excursion
       (select-window wnd)
       (save-excursion
         (goto-char (window-start))
         (while (re-search-forward regex we t)
-          (push (cons (1- (point)) wnd) candidates)))
+          (push (cons (cons (match-beginning 0)
+                            (match-end 0))
+                      wnd) candidates)))
       (nreverse candidates))))
 
-(defun avy-jump-char ()
+(defun avi--overlay (str pt wnd)
+  "Create an overlay with STR at PT in WND."
+  (let ((ol (make-overlay pt (1+ pt) (window-buffer wnd)))
+        (old-str (with-selected-window wnd
+                   (buffer-substring pt (1+ pt)))))
+    (when avi-background
+      (propertize old-str 'face 'aw-background-face))
+    (overlay-put ol 'window wnd)
+    (overlay-put ol 'display (concat str old-str))
+    (push ol aw-overlays-lead)))
+
+(defun avi--overlay-pre (path leaf)
+  "Create an overlay with STR at LEAF.
+PATH is a list of keys from tree root to LEAF.
+LEAF is ((BEG . END) . WND)."
+  (avi--overlay
+   (propertize (apply #'string (reverse path))
+               'face 'avi-lead-face)
+   (if (consp (car leaf))
+       (caar leaf)
+     (car leaf))
+   (cdr leaf)))
+
+(defun avi--overlay-post (path leaf)
+  "Create an overlay with STR at LEAF.
+PATH is a list of keys from tree root to LEAF.
+LEAF is ((BEG . END) . WND)."
+  (avi--overlay
+   (propertize (apply #'string (reverse path))
+               'face 'avi-lead-face)
+   (if (consp (car leaf))
+       (cdar leaf)
+     (car leaf))
+   (cdr leaf)))
+
+;;* Commands
+;;;###autoload
+(defun avi-goto-char ()
   "Read one char and jump to it in current window."
   (interactive)
-  (avy--process (avy--regex-candidates
-                 (string (read-char "char: "))
-                 (selected-window))
-                #'avy--goto))
+  (avi--goto
+   (avi--process
+    (avi--regex-candidates
+     (string (read-char "char: "))
+     (selected-window))
+    #'avi--overlay-post)))
 
-(defun avy-jump-double-char ()
+;;;###autoload
+(defun avi-goto-char-2 ()
   "Read two chars and jump to them in current window."
   (interactive)
-  (avy--process (avy--regex-candidates
-                 (string
-                  (read-char "char 1: ")
-                  (read-char "char 2: "))
-                 (selected-window))
-                #'avy--goto))
+  (avi--goto
+   (avi--process
+    (avi--regex-candidates
+     (string
+      (read-char "char 1: ")
+      (read-char "char 2: "))
+     (selected-window))
+    #'avi--overlay-post)))
 
-(defun avy-jump-isearch ()
+;;;###autoload
+(defun avi-isearch ()
   "Jump to one of the current isearch candidates."
   (interactive)
-  (let ((candidates
-         (mapcar (lambda (x) (cons (1+ (car x))
-                              (cdr x)))
-                 (avy--regex-candidates isearch-string))))
-    (avy--process candidates #'avy--goto t)
-    (isearch-done)))
+  (let* ((candidates
+          (avi--regex-candidates isearch-string))
+         (avi-background nil)
+         (candidate
+          (avi--process candidates #'avi--overlay-post)))
+    (isearch-done)
+    (avi--goto candidate)))
 
-(defun avy-jump-zero-word ()
-  "Jump to a word start in current buffer"
+;;;###autoload
+(defun avi-goto-word-0 ()
+  "Jump to a word start in current window."
   (interactive)
-  (let ((we (window-end))
+  (let ((we (window-end (selected-window) t))
+        (avi-keys (number-sequence ?a ?z))
         candidates)
     (save-excursion
       (goto-char (window-start))
@@ -115,38 +177,97 @@ Each element of the list is (POSITION . WND)."
         (forward-word -1)
         (push (cons (point) (selected-window))
               candidates)))
-    (avy--process (nreverse candidates)
-                  #'avy--goto)))
+    (avi--goto
+     (avi--process (nreverse candidates)
+                   #'avi--overlay-pre))))
 
-(defun avy-jump-one-word ()
-  "Jump to a word start in current buffer.
+;;;###autoload
+(defun avi-goto-word-1 ()
+  "Jump to a word start in current window.
 Read one char with which the word should start."
   (interactive)
-  (let ((candidates (avy--regex-candidates
+  (let ((candidates (avi--regex-candidates
                      (string (read-char "char: "))
                      (selected-window))))
     (save-excursion
       (setq candidates (cl-remove-if-not
                         (lambda (x)
-                          (goto-char (car x))
+                          (goto-char (caar x))
                           (looking-at "\\b"))
-                        (nreverse candidates))))
-    (avy--process candidates #'avy--goto)))
+                        candidates)))
+    (avi--goto
+     (avi--process
+      candidates
+      #'avi--overlay-pre))))
 
-(defun avy-jump-line ()
-  "Jump to a line start in current buffer."
-  (interactive)
-  (let ((we (window-end))
+(defun avi--line ()
+  "Select line in current window."
+  (let ((avi-background nil)
         candidates)
     (save-excursion
-      (goto-char (window-start))
-      (while (< (point) we)
-        (push (cons (point) (selected-window))
-              candidates)
-        (forward-line 1)))
-    (avy--process (nreverse candidates)
-                  #'avy--goto
-                  t)))
+      (save-restriction
+        (narrow-to-region (window-start) (window-end (selected-window) t))
+        (goto-char (point-min))
+        (while (< (point) (point-max))
+          (push (cons (point) (selected-window))
+                candidates)
+          (forward-line 1))))
+    (avi--process (nreverse candidates) #'avi--overlay-pre)))
+
+;;;###autoload
+(defun avi-goto-line ()
+  "Jump to a line start in current buffer."
+  (interactive)
+  (avi--goto (avi--line)))
+
+;;;###autoload
+(defun avi-copy-line (arg)
+  "Copy a selected line above the current line.
+ARG lines can be used."
+  (interactive "p")
+  (let ((start (car (avi--line))))
+    (move-beginning-of-line nil)
+    (save-excursion
+      (insert
+       (buffer-substring-no-properties
+        start
+        (save-excursion
+          (goto-char start)
+          (move-end-of-line arg)
+          (point)))
+       "\n"))))
+
+;;;###autoload
+(defun avi-move-line (arg)
+  "Move a selected line above the current line.
+ARG lines can be used."
+  (interactive "p")
+  (let ((start (car (avi--line))))
+    (move-beginning-of-line nil)
+    (save-excursion
+      (save-excursion
+        (goto-char start)
+        (move-end-of-line arg)
+        (kill-region start (point)))
+      (insert
+       (current-kill 0)))))
+
+;;;###autoload
+(defun avi-copy-region ()
+  "Select two lines and copy the text between them here."
+  (interactive)
+  (let ((beg (car (avi--line)))
+        (end (car (avi--line)))
+        (pad (if (bolp) "" "\n")))
+    (move-beginning-of-line nil)
+    (save-excursion
+      (insert
+       (buffer-substring-no-properties
+        beg
+        (save-excursion
+          (goto-char end)
+          (line-end-position)))
+       pad))))
 
 (provide 'avy-jump)
 
