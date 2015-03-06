@@ -111,7 +111,7 @@ multiple DISPLAY-FN invokations."
         (if (setq branch (assoc char tree))
             (if (eq (car (setq tree (cdr branch))) 'leaf)
                 (throw 'done (cdr tree)))
-          (user-error "No such candidate")
+          (signal 'user-error (list "No such candidate" char))
           (throw 'done nil))))))
 
 (provide 'avy)
