@@ -205,6 +205,16 @@ LEAF is (PT . WND)."
                       ol))
                   wnd-list))))
 
+(defvar aw--flip-keys nil
+  "Pre-processed `aw-flip-keys'.")
+
+(defcustom aw-flip-keys '("n")
+  "Keys which should select the last window."
+  :set (lambda (sym val)
+         (set sym val)
+         (setq aw--flip-keys
+               (mapcar (lambda (x) (aref (kbd x) 0)) val))))
+
 (defun aw-select (mode-line)
   "Return a selected other window.
 Amend MODE-LINE to the mode line for the duration of the selection."
@@ -239,10 +249,16 @@ Amend MODE-LINE to the mode line for the duration of the selection."
          (force-mode-line-update)
          ;; turn off helm transient map
          (remove-hook 'post-command-hook 'helm--maybe-update-keymap)
-         (unwind-protect (or (cdr (avy-read (avy-tree candidate-list aw-keys)
-                                            #'aw--lead-overlay
-                                            #'aw--remove-leading-chars))
-                             start-window)
+         (unwind-protect
+              (condition-case err
+                  (or (cdr (avy-read (avy-tree candidate-list aw-keys)
+                                     #'aw--lead-overlay
+                                     #'aw--remove-leading-chars))
+                      start-window)
+                (error
+                 (if (memq (caddr err) aw--flip-keys)
+                     (aw--pop-window)
+                   (signal (car err) (cdr err)))))
            (aw--done)))))))
 
 ;;* Interactive
@@ -318,6 +334,27 @@ Windows are numbered top down, left to right."
           ((< (cadr e1) (cadr e2))
            t))))
 
+(defvar aw--window-ring (make-ring 10)
+  "Hold the window switching history.")
+
+(defun aw--push-window (window)
+  "Store WINDOW to `aw--window-ring'."
+  (when (or (zerop (ring-length aw--window-ring))
+            (not (equal
+                  (ring-ref aw--window-ring 0)
+                  window)))
+    (ring-insert aw--window-ring (selected-window))))
+
+(defun aw--pop-window ()
+  "Return the removed top of `aw--window-ring'."
+  (let (res)
+    (condition-case nil
+        (while (not (window-live-p
+                     (setq res (ring-remove aw--window-ring 0)))))
+      (error
+       (error "No previous windows stored")))
+    res))
+
 (defun aw-switch-to-window (window)
   "Switch to the window WINDOW."
   (let ((frame (window-frame window)))
@@ -325,8 +362,15 @@ Windows are numbered top down, left to right."
                (not (eq frame (selected-frame))))
       (select-frame-set-input-focus frame))
     (if (window-live-p window)
-        (select-window window)
+        (progn
+          (aw--push-window (selected-window))
+          (select-window window))
       (error "Got a dead window %S" window))))
+
+(defun aw-flip-window ()
+  "Switch to the window you were previously in."
+  (interactive)
+  (aw-switch-to-window (aw--pop-window)))
 
 (defun aw-delete-window (window)
   "Delete window WINDOW."
@@ -356,6 +400,7 @@ Windows are numbered top down, left to right."
         (select-frame-set-input-focus (window-frame window)))
       (when (and (window-live-p window)
                  (not (eq window this-window)))
+        (aw--push-window this-window)
         (swap-windows this-window window)))))
 
 (defun aw-offset (window)
