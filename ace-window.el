@@ -102,6 +102,26 @@ Use M-0 `ace-window' to toggle this value."
   '((t (:foreground "gray40")))
   "Face for whole window background during selection.")
 
+(defcustom aw-mode-line-key-display-on t
+  "Toggles Workgroups' mode-line display."
+  :type 'boolean
+  :set (lambda (sym val)
+         (custom-set-default sym val)
+         (force-mode-line-update)))
+
+(defface aw-mode-line-face
+  '((t (:foreground "red")))
+  "Face used for ace window key in the mode-line.")
+
+(defcustom ace-window-mode-line-format "#%c" "Ace window mode-line format.")
+
+(defcustom ace-window-mode-line-position 1
+  "The position in the mode-line `ace-window-mode' displays the number.")
+
+(defvar aw--table nil "Window and key hash map.")
+
+(defvar aw--mode-line-show-key nil "Ace window mode line show key mode.")
+
 ;;* Implementation
 (defun aw-ignored-p (window)
   "Return t if WINDOW should be ignored."
@@ -315,6 +335,32 @@ window."
     (16 (ace-delete-window))
     (t (ace-select-window))))
 
+;;;###autoload
+(defun ace-window-show-on-mode-line (&optional arg)
+  "Show ace window key on mode-line on and off.
+ARG is nil - toggle
+ARG >= 1   - turn on
+ARG == 0   - turn off
+ARG is anything else, turn on `workgroups-mode'."
+  (interactive (list current-prefix-arg))
+  (setq aw--mode-line-show-key
+        (cond ((not arg) (not aw--mode-line-show-key))
+              ((integerp arg) (if (> arg 0) t nil))
+              (t)))
+  (cond (aw--mode-line-show-key
+         (unless aw--table
+           (save-excursion
+             (setq aw--table (make-hash-table :size (length aw-keys)))
+             (aw--install-mode-line)
+             (add-hook 'window-configuration-change-hook 'aw-update))))
+        (t
+         (aw--clear-mode-line)
+         (remove-hook 'window-configuration-change-hook 'aw-update)
+         (setq aw--table nil)))
+  (message (concat "Ace window show on mode line: "
+                   (if aw--mode-line-show-key "on" "off")))
+  aw--mode-line-show-key)
+
 ;;* Utility
 (defun aw-window< (wnd1 wnd2)
   "Return true if WND1 is less than WND2.
@@ -420,6 +466,52 @@ The point is writable, i.e. it's not part of space after newline."
                        h))
           (forward-line))
         (+ (point) h)))))
+
+;;* Mode line
+(defun aw-update ()
+  "Update the key showed on mode-line."
+  (let* ((key-list aw-keys)
+         (wnd-list (aw-window-list)))
+    (clrhash aw--table)
+    (dolist (win wnd-list)
+      (let ((key (car key-list)))
+        (when key
+          (setq key-list (cdr key-list))
+          (puthash win key aw--table))))))
+
+(defun aw--mode-line-key-string (&optional window)
+  "Format the WINDOW to string."
+  (let* ((k (gethash (or window (selected-window)) aw--table))
+         (s (format ace-window-mode-line-format k)))
+    (propertize s 'face 'aw-mode-line-face)))
+
+(defun aw--install-mode-line (&optional position)
+  "Install the window number from `ace-window-mode' to the mode-line at POSITION."
+  (let ((mode-line (default-value 'mode-line-format))
+        (res))
+    (dotimes (i (min (or position ace-window-mode-line-position)
+                     (length mode-line)))
+      (push (car mode-line) res)
+      (pop mode-line))
+    (push '(aw-mode-line-key-display-on (:eval (aw--mode-line-key-string))) res)
+    (while mode-line
+      (push (car mode-line) res)
+      (pop mode-line))
+    (set-default 'mode-line-format (nreverse res)))
+  (force-mode-line-update t))
+
+(defun aw--clear-mode-line ()
+  "Remove the window number of `ace-window-mode' from the mode-line."
+  (let ((mode-line (default-value 'mode-line-format))
+        (res))
+    (while mode-line
+      (let ((item (car mode-line)))
+        (unless (equal item '(aw-mode-line-key-display-on
+                              (:eval (aw--mode-line-key-string))) )
+          (push item res)))
+      (pop mode-line))
+    (set-default 'mode-line-format (nreverse res)))
+  (force-mode-line-update t))
 
 (provide 'ace-window)
 
