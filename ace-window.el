@@ -102,6 +102,10 @@ Use M-0 `ace-window' to toggle this value."
   '((t (:foreground "gray40")))
   "Face for whole window background during selection.")
 
+(defface aw-mode-line-face
+  '((t (:foreground "black")))
+  "Face used for ace window key in the mode-line.")
+
 ;;* Implementation
 (defun aw-ignored-p (window)
   "Return t if WINDOW should be ignored."
@@ -420,6 +424,8 @@ The point is writable, i.e. it's not part of space after newline."
                        h))
           (forward-line))
         (+ (point) h)))))
+
+;;* Mode line
 
 (provide 'ace-window)
 
