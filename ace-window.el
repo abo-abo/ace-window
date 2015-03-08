@@ -104,7 +104,7 @@ Use M-0 `ace-window' to toggle this value."
 
 (defface aw-mode-line-face
   '((t (:foreground "black")))
-  "Face used for ace window key in the mode-line.")
+  "Face used for displaying the ace window key in the mode-line.")
 
 ;;* Implementation
 (defun aw-ignored-p (window)
@@ -426,6 +426,37 @@ The point is writable, i.e. it's not part of space after newline."
         (+ (point) h)))))
 
 ;;* Mode line
+;;;###autoload
+(define-minor-mode ace-window-display-mode
+  "Minor mode for showing the ace window key in the mode line."
+  :global t
+  (if ace-window-display-mode
+      (progn
+        (aw-update)
+        (set-default
+         'mode-line-format
+         `((ace-window-display-mode
+            (:eval (window-parameter (selected-window) 'ace-window-path)))
+           ,@(default-value 'mode-line-format)))
+        (force-mode-line-update t)
+        (add-hook 'window-configuration-change-hook 'aw-update))
+    (set-default
+     'mode-line-format
+     (assq-delete-all
+      'ace-window-display-mode
+      (default-value 'mode-line-format)))
+    (remove-hook 'window-configuration-change-hook 'aw-update)))
+
+(defun aw-update ()
+  "Update ace-window-path window parameter for all windows."
+  (avy-traverse
+   (avy-tree (aw-window-list) aw-keys)
+   (lambda (path leaf)
+     (set-window-parameter
+      leaf 'ace-window-path
+      (propertize
+       (apply #'string (reverse path))
+       'face 'aw-mode-line-face)))))
 
 (provide 'ace-window)
 
