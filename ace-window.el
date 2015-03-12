@@ -102,9 +102,14 @@ Use M-0 `ace-window' to toggle this value."
   '((t (:foreground "gray40")))
   "Face for whole window background during selection.")
 
-(defface aw-mode-line-face
+(defface aw-face-mode-line
   '((t (:foreground "black")))
   "Face used for displaying the ace window key in the mode-line.")
+
+(defcustom aw-mode-line-face
+  'aw-face-mode-line
+  "Face for modeline."
+  :type 'sexp)
 
 ;;* Implementation
 (defun aw-ignored-p (window)
@@ -456,7 +461,7 @@ The point is writable, i.e. it's not part of space after newline."
       leaf 'ace-window-path
       (propertize
        (apply #'string (reverse path))
-       'face 'aw-mode-line-face)))))
+       'face aw-mode-line-face)))))
 
 (provide 'ace-window)
 
