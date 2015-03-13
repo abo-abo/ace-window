@@ -428,7 +428,7 @@ The point is writable, i.e. it's not part of space after newline."
 ;;* Mode line
 ;;;###autoload
 (define-minor-mode ace-window-display-mode
-  "Minor mode for showing the ace window key in the mode line."
+    "Minor mode for showing the ace window key in the mode line."
   :global t
   (if ace-window-display-mode
       (progn
@@ -437,7 +437,9 @@ The point is writable, i.e. it's not part of space after newline."
          'mode-line-format
          `((ace-window-display-mode
             (:eval (window-parameter (selected-window) 'ace-window-path)))
-           ,@(default-value 'mode-line-format)))
+           ,@(assq-delete-all
+              'ace-window-display-mode
+              (default-value 'mode-line-format))))
         (force-mode-line-update t)
         (add-hook 'window-configuration-change-hook 'aw-update))
     (set-default
