@@ -103,7 +103,7 @@ Use M-0 `ace-window' to toggle this value."
   "Face for whole window background during selection.")
 
 (defface aw-mode-line-face
-  '((t (:foreground "black")))
+    '((t (:inherit mode-line-buffer-id)))
   "Face used for displaying the ace window key in the mode-line.")
 
 ;;* Implementation
