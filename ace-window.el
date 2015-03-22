@@ -57,6 +57,7 @@
 
 ;;; Code:
 (require 'avy)
+(require 'ring)
 
 ;;* Customization
 (defgroup ace-window nil
@@ -261,7 +262,7 @@ Amend MODE-LINE to the mode line for the duration of the selection."
                                      #'aw--remove-leading-chars))
                       start-window)
                 (error
-                 (if (memq (caddr err) aw--flip-keys)
+                 (if (memq (nth 2 err) aw--flip-keys)
                      (aw--pop-window)
                    (signal (car err) (cdr err)))))
            (aw--done)))))))
