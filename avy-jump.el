@@ -118,6 +118,28 @@ LEAF is ((BEG . END) . WND)."
      (car leaf))
    (cdr leaf)))
 
+(defun avi--overlay-at (path leaf)
+  "Create an overlay with STR at LEAF.
+PATH is a list of keys from tree root to LEAF.
+LEAF is ((BEG . END) . WND)."
+  (let ((str (propertize
+              (string (car (last path)))
+              'face 'avi-lead-face))
+        (pt (if (consp (car leaf))
+                (caar leaf)
+              (car leaf)))
+        (wnd (cdr leaf)))
+    (let ((ol (make-overlay pt (1+ pt)
+                            (window-buffer wnd)))
+          (old-str (with-selected-window wnd
+                     (buffer-substring pt (1+ pt)))))
+      (when avi-background
+        (setq old-str (propertize
+                       old-str 'face 'aw-background-face)))
+      (overlay-put ol 'window wnd)
+      (overlay-put ol 'display str)
+      (push ol aw-overlays-lead))))
+
 (defun avi--overlay-post (path leaf)
   "Create an overlay with STR at LEAF.
 PATH is a list of keys from tree root to LEAF.
