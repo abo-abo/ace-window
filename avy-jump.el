@@ -75,9 +75,10 @@ POS is either a position or (BEG . END)."
                       #'aw--remove-leading-chars))))
     (aw--done)))
 
-(defun avi--regex-candidates (regex &optional wnd beg end)
+(defun avi--regex-candidates (regex &optional wnd beg end pred)
   "Return all elements that match REGEX in WND.
-Each element of the list is ((BEG . END) . WND)."
+Each element of the list is ((BEG . END) . WND)
+When PRED is non-nil, it's a filter for matching point positions."
   (setq wnd (or wnd (selected-window)))
   (let ((we (or end (window-end (selected-window) t)))
         candidates)
@@ -86,9 +87,11 @@ Each element of the list is ((BEG . END) . WND)."
       (save-excursion
         (goto-char (or beg (window-start)))
         (while (re-search-forward regex we t)
-          (push (cons (cons (match-beginning 0)
-                            (match-end 0))
-                      wnd) candidates)))
+          (when (or (null pred)
+                    (funcall pred))
+            (push (cons (cons (match-beginning 0)
+                              (match-end 0))
+                        wnd) candidates))))
       (nreverse candidates))))
 
 (defun avi--overlay (str pt wnd)
