@@ -94,11 +94,15 @@ When PRED is non-nil, it's a filter for matching point positions."
                         wnd) candidates))))
       (nreverse candidates))))
 
+(defvar avi--overlay-offset 0
+  "The offset to apply in `avi--overlay'.")
+
 (defun avi--overlay (str pt wnd)
   "Create an overlay with STR at PT in WND."
-  (let ((ol (make-overlay pt (1+ pt) (window-buffer wnd)))
-        (old-str (with-selected-window wnd
-                   (buffer-substring pt (1+ pt)))))
+  (let* ((pt (+ pt avi--overlay-offset))
+         (ol (make-overlay pt (1+ pt) (window-buffer wnd)))
+         (old-str (with-selected-window wnd
+                    (buffer-substring pt (1+ pt)))))
     (when avi-background
       (setq old-str (propertize
                      old-str 'face 'aw-background-face)))
