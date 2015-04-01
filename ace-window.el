@@ -171,8 +171,11 @@ LEAF is (PT . WND)."
   (let* ((pt (car leaf))
          (wnd (cdr leaf))
          (ol (make-overlay pt (1+ pt) (window-buffer wnd)))
-         (old-str (with-selected-window wnd
-                    (buffer-substring pt (1+ pt))))
+         (old-str (or
+                   (ignore-errors
+                     (with-selected-window wnd
+                       (buffer-substring pt (1+ pt))))
+                   ""))
          (new-str
           (concat
            (cl-case aw-leading-char-style
