@@ -203,6 +203,19 @@ LEAF is ((BEG . END) . WND)."
      (avi--process candidates #'avi--overlay-pre))))
 
 ;;;###autoload
+(defun avi-goto-subword-0 ()
+  "Jump to a word or subword start in current window."
+  (interactive)
+  (let* ((avi-keys (number-sequence ?a ?z))
+         (candidates (avi--regex-candidates
+                      "\\(\\b\\sw\\)\\|\\(?:[^A-Z]\\([A-Z]\\)\\)")))
+    (dolist (x candidates)
+      (when (> (- (cdar x) (caar x)) 1)
+        (cl-incf (caar x))))
+    (avi--goto
+     (avi--process candidates #'avi--overlay-pre))))
+
+;;;###autoload
 (defun avi-goto-word-1 ()
   "Jump to a word start in current window.
 Read one char with which the word should start."
