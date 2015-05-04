@@ -75,25 +75,30 @@ POS is either a position or (BEG . END)."
                       #'aw--remove-leading-chars))))
     (aw--done)))
 
+(defcustom avi-all-windows t
+  "When non-nil, loop though all windows for candidates."
+  :type 'boolean)
+
 (defun avi--regex-candidates (regex &optional wnd beg end pred)
   "Return all elements that match REGEX in WND.
 Each element of the list is ((BEG . END) . WND)
 When PRED is non-nil, it's a filter for matching point positions."
-  (setq wnd (or wnd (selected-window)))
-  (let ((we (or end (window-end (selected-window) t)))
-        candidates)
-    (save-window-excursion
-      (select-window wnd)
-      (save-excursion
-        (goto-char (or beg (window-start)))
-        (while (re-search-forward regex we t)
-          (unless (get-char-property (point) 'invisible)
-            (when (or (null pred)
-                      (funcall pred))
-              (push (cons (cons (match-beginning 0)
-                                (match-end 0))
-                          wnd) candidates)))))
-      (nreverse candidates))))
+  (let (candidates)
+    (dolist (wnd (if avi-all-windows
+                     (window-list)
+                   (list (selected-window))))
+      (with-selected-window wnd
+        (let ((we (or end (window-end (selected-window) t))))
+          (save-excursion
+            (goto-char (or beg (window-start)))
+            (while (re-search-forward regex we t)
+              (unless (get-char-property (point) 'invisible)
+                (when (or (null pred)
+                          (funcall pred))
+                  (push (cons (cons (match-beginning 0)
+                                    (match-end 0))
+                              wnd) candidates))))))))
+    (nreverse candidates)))
 
 (defvar avi--overlay-offset 0
   "The offset to apply in `avi--overlay'.")
