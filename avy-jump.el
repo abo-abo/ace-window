@@ -315,7 +315,8 @@ ARG lines can be used."
         (move-end-of-line arg)
         (kill-region start (point)))
       (insert
-       (current-kill 0)))))
+       (current-kill 0)
+       "\n"))))
 
 ;;;###autoload
 (defun avi-copy-region ()
