@@ -254,28 +254,36 @@ Read one char with which the word should start."
     (avi--goto
      (avi--process candidates #'avi--overlay-pre))))
 
-(defun avi--line ()
+(defun avi--line (&optional arg)
   "Select line in current window."
   (let ((avi-background nil)
-        (ws (window-start))
+        (avi-all-windows
+         (if arg
+             (not avi-all-windows)
+           avi-all-windows))
         candidates)
-    (save-excursion
-      (save-restriction
-        (narrow-to-region ws (window-end (selected-window) t))
-        (goto-char (point-min))
-        (while (< (point) (point-max))
-          (unless (get-char-property
-                   (max (1- (point)) ws) 'invisible)
-            (push (cons (point) (selected-window))
-                  candidates))
-          (forward-line 1))))
+    (dolist (wnd (if avi-all-windows
+                     (window-list)
+                   (list (selected-window))))
+      (with-selected-window wnd
+        (let ((ws (window-start)))
+          (save-excursion
+            (save-restriction
+              (narrow-to-region ws (window-end (selected-window) t))
+              (goto-char (point-min))
+              (while (< (point) (point-max))
+                (unless (get-char-property
+                         (max (1- (point)) ws) 'invisible)
+                  (push (cons (point) (selected-window))
+                        candidates))
+                (forward-line 1)))))))
     (avi--process (nreverse candidates) #'avi--overlay-pre)))
 
 ;;;###autoload
-(defun avi-goto-line ()
+(defun avi-goto-line (&optional arg)
   "Jump to a line start in current buffer."
-  (interactive)
-  (avi--goto (avi--line)))
+  (interactive "P")
+  (avi--goto (avi--line arg)))
 
 ;;;###autoload
 (defun avi-copy-line (arg)
