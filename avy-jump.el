@@ -257,14 +257,17 @@ Read one char with which the word should start."
 (defun avi--line ()
   "Select line in current window."
   (let ((avi-background nil)
+        (ws (window-start))
         candidates)
     (save-excursion
       (save-restriction
-        (narrow-to-region (window-start) (window-end (selected-window) t))
+        (narrow-to-region ws (window-end (selected-window) t))
         (goto-char (point-min))
         (while (< (point) (point-max))
-          (push (cons (point) (selected-window))
-                candidates)
+          (unless (get-char-property
+                   (max (1- (point)) ws) 'invisible)
+            (push (cons (point) (selected-window))
+                  candidates))
           (forward-line 1))))
     (avi--process (nreverse candidates) #'avi--overlay-pre)))
 
