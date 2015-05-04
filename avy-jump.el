@@ -172,30 +172,39 @@ LEAF is ((BEG . END) . WND)."
        (cdr leaf)
      (selected-window))))
 
+(defun avi--generic-jump (regex flip)
+  "Jump to REGEX.
+When FLIP is non-nil, flip `avi-all-windows'."
+  (let ((avi-all-windows
+         (if flip
+             (not avi-all-windows)
+           avi-all-windows)))
+    (avi--goto
+     (avi--process
+      (avi--regex-candidates
+       regex)
+      #'avi--overlay-post))))
+
 ;;* Commands
 ;;;###autoload
-(defun avi-goto-char ()
-  "Read one char and jump to it in current window."
-  (interactive)
-  (avi--goto
-   (avi--process
-    (avi--regex-candidates
-     (string (read-char "char: "))
-     (selected-window))
-    #'avi--overlay-post)))
+(defun avi-goto-char (&optional arg)
+  "Read one char and jump to it.
+The window scope is determined by `avi-all-windows'.
+When ARG is non-nil, flip the window scope."
+  (interactive "P")
+  (avi--generic-jump
+   (string (read-char "char: ")) arg))
 
 ;;;###autoload
-(defun avi-goto-char-2 ()
-  "Read two chars and jump to them in current window."
-  (interactive)
-  (avi--goto
-   (avi--process
-    (avi--regex-candidates
-     (string
-      (read-char "char 1: ")
-      (read-char "char 2: "))
-     (selected-window))
-    #'avi--overlay-post)))
+(defun avi-goto-char-2 (&optional arg)
+  "Read two chars and jump to them in current window.
+When ARG is non-nil, flip the window scope."
+  (interactive "P")
+  (avi--generic-jump
+   (string
+    (read-char "char 1: ")
+    (read-char "char 2: "))
+   arg))
 
 ;;;###autoload
 (defun avi-isearch ()
@@ -210,19 +219,21 @@ LEAF is ((BEG . END) . WND)."
     (avi--goto candidate)))
 
 ;;;###autoload
-(defun avi-goto-word-0 ()
-  "Jump to a word start in current window."
-  (interactive)
-  (let* ((avi-keys (number-sequence ?a ?z))
-         (candidates (avi--regex-candidates "\\b\\sw")))
-    (avi--goto
-     (avi--process candidates #'avi--overlay-pre))))
+(defun avi-goto-word-0 (arg)
+  "Jump to a word start."
+  (interactive "P")
+  (let ((avi-keys (number-sequence ?a ?z)))
+    (avi--generic-jump "\\b\\sw" arg)))
 
 ;;;###autoload
-(defun avi-goto-subword-0 ()
-  "Jump to a word or subword start in current window."
-  (interactive)
-  (let* ((avi-keys (number-sequence ?a ?z))
+(defun avi-goto-subword-0 (&optional arg)
+  "Jump to a word or subword start."
+  (interactive "P")
+  (let* ((avi-all-windows
+          (if arg
+              (not avi-all-windows)
+            avi-all-windows))
+         (avi-keys (number-sequence ?a ?z))
          (candidates (avi--regex-candidates
                       "\\(\\b\\sw\\)\\|\\(?:[^A-Z]\\([A-Z]\\)\\)")))
     (dolist (x candidates)
