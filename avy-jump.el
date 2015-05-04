@@ -118,10 +118,15 @@ LEAF is ((BEG . END) . WND)."
   (avi--overlay
    (propertize (apply #'string (reverse path))
                'face 'avi-lead-face)
-   (if (consp (car leaf))
-       (caar leaf)
-     (car leaf))
-   (cdr leaf)))
+   (cond ((numberp leaf)
+          leaf)
+         ((consp (car leaf))
+          (caar leaf))
+         (t
+          (car leaf)))
+   (if (consp leaf)
+       (cdr leaf)
+     (selected-window))))
 
 (defun avi--overlay-at (path leaf)
   "Create an overlay with STR at LEAF.
@@ -152,10 +157,15 @@ LEAF is ((BEG . END) . WND)."
   (avi--overlay
    (propertize (apply #'string (reverse path))
                'face 'avi-lead-face)
-   (if (consp (car leaf))
-       (cdar leaf)
-     (car leaf))
-   (cdr leaf)))
+   (cond ((numberp leaf)
+          leaf)
+         ((consp (car leaf))
+          (cdar leaf))
+         (t
+          (car leaf)))
+   (if (consp leaf)
+       (cdr leaf)
+     (selected-window))))
 
 ;;* Commands
 ;;;###autoload
