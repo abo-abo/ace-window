@@ -87,11 +87,12 @@ When PRED is non-nil, it's a filter for matching point positions."
       (save-excursion
         (goto-char (or beg (window-start)))
         (while (re-search-forward regex we t)
-          (when (or (null pred)
-                    (funcall pred))
-            (push (cons (cons (match-beginning 0)
-                              (match-end 0))
-                        wnd) candidates))))
+          (unless (get-char-property (point) 'invisible)
+            (when (or (null pred)
+                      (funcall pred))
+              (push (cons (cons (match-beginning 0)
+                                (match-end 0))
+                          wnd) candidates)))))
       (nreverse candidates))))
 
 (defvar avi--overlay-offset 0
