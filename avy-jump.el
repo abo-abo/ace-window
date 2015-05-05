@@ -63,6 +63,7 @@ POS is either a position or (BEG . END)."
     (let ((pt (car x)))
       (when (consp pt)
         (setq pt (car pt)))
+      (unless (= pt (point)) (push-mark))
       (goto-char pt))))
 
 (defun avi--process (candidates overlay-fn)
