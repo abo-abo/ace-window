@@ -27,7 +27,6 @@
 ;;; Code:
 ;;* Requires
 (require 'avy)
-(require 'ace-window)
 
 ;;* Customization
 (defgroup avy-jump nil
@@ -52,6 +51,10 @@
   '((t (:foreground "white" :background "#e52b50")))
   "Face used for the leading chars.")
 
+(defface avy-background-face
+  '((t (:foreground "gray40")))
+  "Face for whole window background during selection.")
+
 ;;* Internals
 (defun avi--goto (x)
   "Goto X.
@@ -69,18 +72,39 @@ POS is either a position or (BEG . END)."
 (defun avi--process (candidates overlay-fn)
   "Select one of CANDIDATES using `avy-read'."
   (unwind-protect
-       (let ((aw-background avi-background))
-         (cl-case (length candidates)
-           (0
-            nil)
-           (1
-            (car candidates))
-           (t
-            (aw--make-backgrounds (list (selected-window)))
-            (avy-read (avy-tree candidates avi-keys)
-                      overlay-fn
-                      #'aw--remove-leading-chars))))
-    (aw--done)))
+       (cl-case (length candidates)
+         (0
+          nil)
+         (1
+          (car candidates))
+         (t
+          (avy--make-backgrounds (list (selected-window)))
+          (avy-read (avy-tree candidates avi-keys)
+                    overlay-fn
+                    #'avy--remove-leading-chars)))
+    (avy--done)))
+
+(defvar avy--overlays-back nil
+  "Hold overlays for when `avi-background' is t.")
+
+(defun avy--make-backgrounds (wnd-list)
+  "Create a dim background overlay for each window on WND-LIST."
+  (when avi-background
+    (setq avy--overlays-back
+          (mapcar (lambda (w)
+                    (let ((ol (make-overlay
+                               (window-start w)
+                               (window-end w)
+                               (window-buffer w))))
+                      (overlay-put ol 'face 'avy-background-face)
+                      ol))
+                  wnd-list))))
+
+(defun avy--done ()
+  "Clean up overlays."
+  (mapc #'delete-overlay avy--overlays-back)
+  (setq avy--overlays-back nil)
+  (avy--remove-leading-chars))
 
 (defcustom avi-all-windows t
   "When non-nil, loop though all windows for candidates."
@@ -110,6 +134,14 @@ When PRED is non-nil, it's a filter for matching point positions."
 (defvar avi--overlay-offset 0
   "The offset to apply in `avi--overlay'.")
 
+(defvar avy--overlays-lead nil
+  "Hold overlays for leading chars.")
+
+(defun avy--remove-leading-chars ()
+  "Remove leading char overlays."
+  (mapc #'delete-overlay avy--overlays-lead)
+  (setq avy--overlays-lead nil))
+
 (defun avi--overlay (str pt wnd)
   "Create an overlay with STR at PT in WND."
   (let* ((pt (+ pt avi--overlay-offset))
@@ -118,10 +150,10 @@ When PRED is non-nil, it's a filter for matching point positions."
                     (buffer-substring pt (1+ pt)))))
     (when avi-background
       (setq old-str (propertize
-                     old-str 'face 'aw-background-face)))
+                     old-str 'face 'avy-background-face)))
     (overlay-put ol 'window wnd)
     (overlay-put ol 'display (concat str old-str))
-    (push ol aw-overlays-lead)))
+    (push ol avy--overlays-lead)))
 
 (defun avi--overlay-pre (path leaf)
   "Create an overlay with STR at LEAF.
@@ -157,10 +189,10 @@ LEAF is ((BEG . END) . WND)."
                      (buffer-substring pt (1+ pt)))))
       (when avi-background
         (setq old-str (propertize
-                       old-str 'face 'aw-background-face)))
+                       old-str 'face 'avy-background-face)))
       (overlay-put ol 'window wnd)
       (overlay-put ol 'display str)
-      (push ol aw-overlays-lead))))
+      (push ol avy--overlays-lead))))
 
 (defun avi--overlay-post (path leaf)
   "Create an overlay with STR at LEAF.

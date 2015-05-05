@@ -8,7 +8,7 @@ LOAD = -l avy.el -l avy-test.el
 all: test
 
 test:
-	$(EMACS) -batch $(LOAD) -f ert-run-tests-batch-and-exit
+	$(emacs) -batch $(LOAD) -f ert-run-tests-batch-and-exit
 
 compile:
 	$(emacs) -batch -l avy-init.el

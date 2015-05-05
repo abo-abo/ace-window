@@ -59,7 +59,7 @@
 ;; deleted instead.
 
 ;;; Code:
-(require 'avy)
+(require 'avy-jump)
 (require 'ring)
 
 ;;* Customization
@@ -141,9 +141,6 @@ Use M-0 `ace-window' to toggle this value."
        (error "Invalid `aw-scope': %S" aw-scope))))
    'aw-window<))
 
-(defvar aw-overlays-lead nil
-  "Hold overlays for leading chars.")
-
 (defvar aw-overlays-back nil
   "Hold overlays for when `aw-background' is t.")
 
@@ -163,7 +160,7 @@ Use M-0 `ace-window' to toggle this value."
   ;; background
   (mapc #'delete-overlay aw-overlays-back)
   (setq aw-overlays-back nil)
-  (aw--remove-leading-chars))
+  (avy--remove-leading-chars))
 
 (defun aw--lead-overlay (path leaf)
   "Create an overlay using PATH at LEAF.
@@ -197,12 +194,7 @@ LEAF is (PT . WND)."
     (overlay-put ol 'face 'aw-leading-char-face)
     (overlay-put ol 'window wnd)
     (overlay-put ol 'display new-str)
-    (push ol aw-overlays-lead)))
-
-(defun aw--remove-leading-chars ()
-  "Remove leading char overlays."
-  (mapc #'delete-overlay aw-overlays-lead)
-  (setq aw-overlays-lead nil))
+    (push ol avy--overlays-lead)))
 
 (defun aw--make-backgrounds (wnd-list)
   "Create a dim background overlay for each window on WND-LIST."
@@ -265,7 +257,7 @@ Amend MODE-LINE to the mode line for the duration of the selection."
               (condition-case err
                   (or (cdr (avy-read (avy-tree candidate-list aw-keys)
                                      #'aw--lead-overlay
-                                     #'aw--remove-leading-chars))
+                                     #'avy--remove-leading-chars))
                       start-window)
                 (error
                  (if (memq (nth 2 err) aw--flip-keys)
