@@ -247,10 +247,13 @@ When ARG is non-nil, flip the window scope."
   "Jump to a word start in current window.
 Read one char with which the word should start."
   (interactive)
-  (let ((candidates (avi--regex-candidates
-                     (concat
-                      "\\b"
-                      (string (read-char "char: "))))))
+  (let* ((str (string (read-char "char: ")))
+         (candidates (avi--regex-candidates
+                      (if (string-match "[,.+-*/=]" str)
+                          str
+                        (concat
+                         "\\b"
+                         str)))))
     (avi--goto
      (avi--process candidates #'avi--overlay-pre))))
 
