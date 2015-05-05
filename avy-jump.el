@@ -42,6 +42,12 @@
   "When non-nil, a gray background will be added during the selection."
   :type 'boolean)
 
+(defcustom avi-word-punc-regexp "[!-/:-@[-`{-~]"
+  "Regexp of punctuation characters that should be matched when calling
+`avi-goto-word-1' command. When nil, punctuation chars will not be matched.
+
+\"[!-/:-@[-`{-~]\" will match all printable punctuation chars.")
+
 (defface avi-lead-face
   '((t (:foreground "white" :background "#e52b50")))
   "Face used for the leading chars.")
@@ -249,7 +255,8 @@ Read one char with which the word should start."
   (interactive)
   (let* ((str (string (read-char "char: ")))
          (candidates (avi--regex-candidates
-                      (if (string-match "[,.+-*/=]" str)
+                      (if (and avi-word-punc-regexp
+                               (string-match avi-word-punc-regexp str))
                           str
                         (concat
                          "\\b"
