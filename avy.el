@@ -29,6 +29,7 @@
 ;; in the original order by traversing the tree depth-first.
 
 ;;; Code:
+(require 'cl-macs)
 
 (defmacro avy-multipop (lst n)
   "Remove LST's first N elements and return them."
@@ -64,7 +65,7 @@ KEYS are placed appropriately on internal nodes."
 
 (defun avy-subdiv (n b)
   "Distribute N in B terms in a balanced way."
-  (let* ((p (1- (floor (log n b))))
+  (let* ((p (1- (floor (+ (log n b) 1e-6))))
          (x1 (expt b p))
          (x2 (* b x1))
          (delta (- n x2))
