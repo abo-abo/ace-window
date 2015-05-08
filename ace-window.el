@@ -6,6 +6,7 @@
 ;; Maintainer: Oleh Krehel <ohwoeowho@gmail.com>
 ;; URL: https://github.com/abo-abo/ace-window
 ;; Version: 0.8.0
+;; Package-Requires: ((avy "0.1.0"))
 ;; Keywords: window, location
 
 ;; This file is part of GNU Emacs.
