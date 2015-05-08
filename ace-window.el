@@ -87,6 +87,10 @@
 Use M-0 `ace-window' to toggle this value."
   :type 'boolean)
 
+(defcustom aw-ignore-current nil
+  "When t, `ace-window' will ignore `selected-window'."
+  :type 'boolean)
+
 (defcustom aw-background t
   "When t, `ace-window' will dim out all buffers temporarily when used.'."
   :type 'boolean)
@@ -115,9 +119,11 @@ Use M-0 `ace-window' to toggle this value."
 ;;* Implementation
 (defun aw-ignored-p (window)
   "Return t if WINDOW should be ignored."
-  (and aw-ignore-on
-       (member (buffer-name (window-buffer window))
-               aw-ignored-buffers)))
+  (or (and aw-ignore-on
+           (member (buffer-name (window-buffer window))
+                   aw-ignored-buffers))
+      (and aw-ignore-current
+           (equal window (selected-window)))))
 
 (defun aw-window-list ()
   "Return the list of interesting windows."
