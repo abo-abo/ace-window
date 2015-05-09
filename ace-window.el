@@ -226,7 +226,7 @@ LEAF is (PT . WND)."
          (setq aw--flip-keys
                (mapcar (lambda (x) (aref (kbd x) 0)) val))))
 
-(defun aw-select (mode-line)
+(defun aw-select (mode-line &optional action)
   "Return a selected other window.
 Amend MODE-LINE to the mode line for the duration of the selection."
   (let ((start-window (selected-window))
@@ -234,51 +234,60 @@ Amend MODE-LINE to the mode line for the duration of the selection."
                              ('global 'visible)
                              ('frame 'frame)))
         (wnd-list (aw-window-list))
-        final-window)
-    (cl-case (length wnd-list)
-      (0
-       start-window)
-      (1
-       (car wnd-list))
-      (2
-       (setq final-window (next-window nil nil next-window-scope))
-       (while (and (aw-ignored-p final-window)
-                   (not (equal final-window start-window)))
-         (setq final-window (next-window final-window nil next-window-scope)))
-       final-window)
-      (t
-       (let ((candidate-list
-              (mapcar (lambda (wnd)
-                        ;; can't jump if the buffer is empty
-                        (with-current-buffer (window-buffer wnd)
-                          (when (= 0 (buffer-size))
-                            (insert " ")))
-                        (cons (aw-offset wnd) wnd))
-                      wnd-list)))
-         (aw--make-backgrounds wnd-list)
-         (setq ace-window-mode mode-line)
-         (force-mode-line-update)
-         ;; turn off helm transient map
-         (remove-hook 'post-command-hook 'helm--maybe-update-keymap)
-         (unwind-protect
-              (condition-case err
-                  (or (cdr (avy-read (avy-tree candidate-list aw-keys)
-                                     #'aw--lead-overlay
-                                     #'avy--remove-leading-chars))
-                      start-window)
-                (error
-                 (if (memq (nth 2 err) aw--flip-keys)
-                     (aw--pop-window)
-                   (signal (car err) (cdr err)))))
-           (aw--done)))))))
+        window)
+    (setq window
+          (cl-case (length wnd-list)
+            (0
+             start-window)
+            (1
+             (car wnd-list))
+            (2
+             (let ((wnd (next-window nil nil next-window-scope)))
+               (while (and (aw-ignored-p wnd)
+                           (not (equal wnd start-window)))
+                 (setq wnd (next-window wnd nil next-window-scope)))
+               wnd))
+            (t
+             (let ((candidate-list
+                    (mapcar (lambda (wnd)
+                              ;; can't jump if the buffer is empty
+                              (with-current-buffer (window-buffer wnd)
+                                (when (= 0 (buffer-size))
+                                  (insert " ")))
+                              (cons (aw-offset wnd) wnd))
+                            wnd-list)))
+               (aw--make-backgrounds wnd-list)
+               (setq ace-window-mode mode-line)
+               (force-mode-line-update)
+               ;; turn off helm transient map
+               (remove-hook 'post-command-hook 'helm--maybe-update-keymap)
+               (unwind-protect
+                    (condition-case err
+                        (let* ((avy-handler-function (lambda (char)
+                                                       (if (eq char ?x)
+                                                           (setq action #'aw-delete-window)
+                                                         (avy-handler-default char))))
+                               (res (avy-read (avy-tree candidate-list aw-keys)
+                                              #'aw--lead-overlay
+                                              #'avy--remove-leading-chars)))
+                          (or (cdr res)
+                              start-window))
+                      (error
+                       (if (memq (nth 2 err) aw--flip-keys)
+                           (aw--pop-window)
+                         (signal (car err) (cdr err)))))
+                 (aw--done))))))
+    (if action
+        (funcall action window)
+      window)))
 
 ;;* Interactive
 ;;;###autoload
 (defun ace-select-window ()
   "Ace select window."
   (interactive)
-  (aw-switch-to-window
-   (aw-select " Ace - Window")))
+  (aw-select " Ace - Window"
+             #'aw-switch-to-window))
 
 ;;;###autoload
 (defun ace-delete-window ()
