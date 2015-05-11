@@ -44,6 +44,18 @@ always be `1`.
 
 - You can delete the selected window by calling `ace-window` with a double prefix argument, i.e. <kbd>C-u C-u</kbd>.
 
+## Change the action midway
+
+You can also start by calling `ace-window` and then decide to switch the action to `delete` or `swap` etc.  By default the bindings are:
+
+- <kbd>x</kbd> - delete window
+- <kbd>m</kbd> - swap (move) window
+- <kbd>v</kbd> - split window vertically
+- <kbd>b</kbd> - split window horizontally
+- <kbd>n</kbd> - select the previous window
+
+In order for it to work, these keys *must not* be in `aw-keys`.
+
 ## Customization
 Aside from binding `ace-window`:
 
