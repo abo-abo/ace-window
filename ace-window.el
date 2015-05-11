@@ -162,8 +162,7 @@ Use M-0 `ace-window' to toggle this value."
 (defun aw--done ()
   "Clean up mode line and overlays."
   ;; mode line
-  (setq ace-window-mode nil)
-  (force-mode-line-update)
+  (aw-set-mode-line nil)
   ;; background
   (mapc #'delete-overlay aw-overlays-back)
   (setq aw-overlays-back nil)
@@ -226,9 +225,40 @@ LEAF is (PT . WND)."
          (setq aw--flip-keys
                (mapcar (lambda (x) (aref (kbd x) 0)) val))))
 
+(defvar aw-dispatch-function 'aw-dispatch-default
+  "Function to call when a character not in `aw-keys' is pressed.")
+
+(defvar aw-action nil
+  "Function to call at the end of `aw-select'.")
+
+(defun aw-set-mode-line (str)
+  "Set mode line indicator to STR."
+  (setq ace-window-mode str)
+  (force-mode-line-update))
+
+(defun aw-dispatch-default (char)
+  (cond ((eq char ?x)
+         (setq aw-action #'aw-delete-window)
+         (aw-set-mode-line " Ace - Delete Window"))
+        ((eq char ?m)
+         (setq aw-action #'aw-swap-window)
+         (aw-set-mode-line " Ace - Swap Window"))
+        ((memq char aw--flip-keys)
+         (aw-flip-window)
+         (throw 'done 'exit))
+        ((eq char ?v)
+         (setq aw-action #'aw-split-window-vert)
+         (aw-set-mode-line " Ace - Split Vert Window"))
+        ((eq char ?b)
+         (setq aw-action #'aw-split-window-horz)
+         (aw-set-mode-line " Ace - Split Horz Window"))
+        (t
+         (avy-handler-default char))))
+
 (defun aw-select (mode-line &optional action)
   "Return a selected other window.
 Amend MODE-LINE to the mode line for the duration of the selection."
+  (setq aw-action action)
   (let ((start-window (selected-window))
         (next-window-scope (cl-case aw-scope
                              ('global 'visible)
@@ -257,28 +287,21 @@ Amend MODE-LINE to the mode line for the duration of the selection."
                               (cons (aw-offset wnd) wnd))
                             wnd-list)))
                (aw--make-backgrounds wnd-list)
-               (setq ace-window-mode mode-line)
-               (force-mode-line-update)
+               (aw-set-mode-line mode-line)
                ;; turn off helm transient map
                (remove-hook 'post-command-hook 'helm--maybe-update-keymap)
                (unwind-protect
-                    (condition-case err
-                        (let* ((avy-handler-function (lambda (char)
-                                                       (if (eq char ?x)
-                                                           (setq action #'aw-delete-window)
-                                                         (avy-handler-default char))))
-                               (res (avy-read (avy-tree candidate-list aw-keys)
-                                              #'aw--lead-overlay
-                                              #'avy--remove-leading-chars)))
-                          (or (cdr res)
-                              start-window))
-                      (error
-                       (if (memq (nth 2 err) aw--flip-keys)
-                           (aw--pop-window)
-                         (signal (car err) (cdr err)))))
+                    (let* ((avy-handler-function aw-dispatch-function)
+                           (res (avy-read (avy-tree candidate-list aw-keys)
+                                          #'aw--lead-overlay
+                                          #'avy--remove-leading-chars)))
+                      (if (eq res 'exit)
+                          (setq aw-action nil)
+                        (or (cdr res)
+                            start-window)))
                  (aw--done))))))
-    (if action
-        (funcall action window)
+    (if aw-action
+        (funcall aw-action window)
       window)))
 
 ;;* Interactive
@@ -422,6 +445,16 @@ Windows are numbered top down, left to right."
                  (not (eq window this-window)))
         (aw--push-window this-window)
         (swap-windows this-window window)))))
+
+(defun aw-split-window-vert (window)
+  "Split WINDOW vertically."
+  (select-window window)
+  (split-window-vertically))
+
+(defun aw-split-window-horz (window)
+  "Split WINDOW horizontally."
+  (select-window window)
+  (split-window-horizontally))
 
 (defun aw-offset (window)
   "Return point in WINDOW that's closest to top left corner.
