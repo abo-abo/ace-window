@@ -60,7 +60,8 @@
 ;; deleted instead.
 
 ;;; Code:
-(require 'avy-jump)
+(require 'avy)
+(require 'avy-jump nil t)
 (require 'ring)
 
 ;;* Customization
