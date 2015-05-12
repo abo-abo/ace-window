@@ -53,8 +53,10 @@ You can also start by calling `ace-window` and then decide to switch the action 
 - <kbd>v</kbd> - split window vertically
 - <kbd>b</kbd> - split window horizontally
 - <kbd>n</kbd> - select the previous window
+- <kbd>i</kbd> - maximize window (select which window)
+- <kbd>o</kbd> - maximize current window
 
-In order for it to work, these keys *must not* be in `aw-keys`.
+In order for it to work, these keys *must not* be in `aw-keys` and you have to have `aw-dispatch-always` set to `t`.
 
 ## Customization
 Aside from binding `ace-window`:
