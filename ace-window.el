@@ -60,7 +60,7 @@
 ;; deleted instead.
 
 ;;; Code:
-(require 'avy)
+(require 'avy-jump)
 (require 'ring)
 
 ;;* Customization
