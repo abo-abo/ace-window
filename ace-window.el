@@ -136,15 +136,11 @@ This will make `ace-window' act different from `other-window' for
   (sort
    (cl-remove-if
     (lambda (w)
-      (let ((f (window-frame w))
-            (b (window-buffer w)))
+      (let ((f (window-frame w)))
         (or (not (and (frame-live-p f)
                       (frame-visible-p f)))
             (string= "initial_terminal" (terminal-name f))
-            (aw-ignored-p w)
-            (with-current-buffer b
-              (and buffer-read-only
-                   (= 0 (buffer-size b)))))))
+            (aw-ignored-p w))))
     (cl-case aw-scope
       (global
        (cl-mapcan #'window-list (frame-list)))
@@ -165,6 +161,10 @@ This will make `ace-window' act different from `other-window' for
     (nconc minor-mode-alist
            (list '(ace-window-mode ace-window-mode))))
 
+(defvar aw-empty-buffers-list nil
+  "Store the read-only empty buffers which had to be modified.
+Modify them back eventually.")
+
 (defun aw--done ()
   "Clean up mode line and overlays."
   ;; mode line
@@ -172,41 +172,52 @@ This will make `ace-window' act different from `other-window' for
   ;; background
   (mapc #'delete-overlay aw-overlays-back)
   (setq aw-overlays-back nil)
-  (avy--remove-leading-chars))
+  (avy--remove-leading-chars)
+  (dolist (b aw-empty-buffers-list)
+    (with-current-buffer b
+      (when (string= (buffer-string) " ")
+        (let ((inhibit-read-only t))
+          (delete-region (point-min) (point-max))))))
+  (setq aw-empty-buffers-list nil))
 
 (defun aw--lead-overlay (path leaf)
   "Create an overlay using PATH at LEAF.
 LEAF is (PT . WND)."
-  (let* ((pt (car leaf))
-         (wnd (cdr leaf))
-         (ol (make-overlay pt (1+ pt) (window-buffer wnd)))
-         (old-str (or
-                   (ignore-errors
-                     (with-selected-window wnd
-                       (buffer-substring pt (1+ pt))))
-                   ""))
-         (new-str
-          (concat
-           (cl-case aw-leading-char-style
-             (char
-              (apply #'string (last path)))
-             (path
-              (apply #'string (reverse path)))
-             (t
-              (error "Bad `aw-leading-char-style': %S"
-                     aw-leading-char-style)))
-           (cond ((string-equal old-str "\t")
-                  (make-string (1- tab-width) ?\ ))
-                 ((string-equal old-str "\n")
-                  "\n")
+  (let ((wnd (cdr leaf)))
+    (with-selected-window wnd
+      (when (= 0 (buffer-size))
+        (push (current-buffer) aw-empty-buffers-list)
+        (let ((inhibit-read-only t))
+          (insert " ")))
+      (let* ((pt (car leaf))
+             (ol (make-overlay pt (1+ pt) (window-buffer wnd)))
+             (old-str (or
+                       (ignore-errors
+                         (with-selected-window wnd
+                           (buffer-substring pt (1+ pt))))
+                       ""))
+             (new-str
+              (concat
+               (cl-case aw-leading-char-style
+                 (char
+                  (apply #'string (last path)))
+                 (path
+                  (apply #'string (reverse path)))
                  (t
-                  (make-string
-                   (max 0 (1- (string-width old-str)))
-                   ?\ ))))))
-    (overlay-put ol 'face 'aw-leading-char-face)
-    (overlay-put ol 'window wnd)
-    (overlay-put ol 'display new-str)
-    (push ol avy--overlays-lead)))
+                  (error "Bad `aw-leading-char-style': %S"
+                         aw-leading-char-style)))
+               (cond ((string-equal old-str "\t")
+                      (make-string (1- tab-width) ?\ ))
+                     ((string-equal old-str "\n")
+                      "\n")
+                     (t
+                      (make-string
+                       (max 0 (1- (string-width old-str)))
+                       ?\ ))))))
+        (overlay-put ol 'face 'aw-leading-char-face)
+        (overlay-put ol 'window wnd)
+        (overlay-put ol 'display new-str)
+        (push ol avy--overlays-lead)))))
 
 (defun aw--make-backgrounds (wnd-list)
   "Create a dim background overlay for each window on WND-LIST."
@@ -289,10 +300,6 @@ Amend MODE-LINE to the mode line for the duration of the selection."
                 (t
                  (let ((candidate-list
                         (mapcar (lambda (wnd)
-                                  ;; can't jump if the buffer is empty
-                                  (with-current-buffer (window-buffer wnd)
-                                    (when (= 0 (buffer-size))
-                                      (insert " ")))
                                   (cons (aw-offset wnd) wnd))
                                 wnd-list)))
                    (aw--make-backgrounds wnd-list)
