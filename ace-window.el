@@ -447,6 +447,10 @@ Windows are numbered top down, left to right."
           (delete-window window)
         (error "Got a dead window %S" window)))))
 
+(defcustom aw-swap-invert nil
+  "When non-nil, the other of the two swapped windows gets the point."
+  :type 'boolean)
+
 (defun aw-swap-window (window)
   "Swap buffers of current window and WINDOW."
   (cl-labels ((swap-windows (window1 window2)
@@ -464,7 +468,9 @@ Windows are numbered top down, left to right."
       (when (and (window-live-p window)
                  (not (eq window this-window)))
         (aw--push-window this-window)
-        (swap-windows this-window window)))))
+        (if aw-swap-invert
+            (swap-windows window this-window)
+          (swap-windows this-window window))))))
 
 (defun aw-split-window-vert (window)
   "Split WINDOW vertically."
