@@ -93,9 +93,9 @@ So you can turn off the gray background with:
 
 ### `aw-dispatch-always`
 
-When non-nil, `ace-window` will issue a `read-char` event for one window.
-This will make `ace-window` act different from `other-window` for one
-or two windows. This is useful to be able to change the action midway
+When non-nil, `ace-window` will issue a `read-char` even for one window.
+This will make `ace-window` act differently from `other-window` for one
+or two windows. This is useful to change the action midway
 and execute other action other than the *jump* default.
 By default is set to `nil`
 
