@@ -91,6 +91,10 @@ Use M-0 `ace-window' to toggle this value."
   "When t, `ace-window' will ignore `selected-window'."
   :type 'boolean)
 
+(defcustom aw-ignore-other-frames nil
+  "When t, `ace-window' will ignore frames not containing `selected-window'."
+  :type 'boolean)
+
 (defcustom aw-background t
   "When t, `ace-window' will dim out all buffers temporarily when used.'."
   :type 'boolean)
@@ -140,7 +144,9 @@ This will make `ace-window' act different from `other-window' for
         (or (not (and (frame-live-p f)
                       (frame-visible-p f)))
             (string= "initial_terminal" (terminal-name f))
-            (aw-ignored-p w))))
+            (aw-ignored-p w)
+            (and aw-ignore-other-frames
+                 (not (eql f (selected-frame)))))))
     (cl-case aw-scope
       (global
        (cl-mapcan #'window-list (frame-list)))
