@@ -250,6 +250,7 @@ LEAF is (PT . WND)."
 (defvar aw-dispatch-alist
   '((?x aw-delete-window " Ace - Delete Window")
     (?m aw-swap-window " Ace - Swap Window")
+    (?M aw-move-window " Ace - Move Window")
     (?n aw-flip-window)
     (?v aw-split-window-vert " Ace - Split Vert Window")
     (?b aw-split-window-horz " Ace - Split Horz Window")
@@ -471,6 +472,14 @@ Windows are numbered top down, left to right."
         (if aw-swap-invert
             (swap-windows window this-window)
           (swap-windows this-window window))))))
+
+(defun aw-move-window (window)
+  "Move the current buffer to WINDOW.
+Switch the current window to the previous buffer."
+  (let ((buffer (current-buffer)))
+    (switch-to-buffer (other-buffer))
+    (aw-switch-to-window window)
+    (switch-to-buffer buffer)))
 
 (defun aw-split-window-vert (window)
   "Split WINDOW vertically."
