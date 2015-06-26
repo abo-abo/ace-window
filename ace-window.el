@@ -309,6 +309,7 @@ Amend MODE-LINE to the mode line for the duration of the selection."
                    (remove-hook 'post-command-hook 'helm--maybe-update-keymap)
                    (unwind-protect
                         (let* ((avy-handler-function aw-dispatch-function)
+                               (avy-translate-char-function #'identity)
                                (res (avy-read (avy-tree candidate-list aw-keys)
                                               #'aw--lead-overlay
                                               #'avy--remove-leading-chars)))
