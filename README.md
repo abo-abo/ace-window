@@ -5,11 +5,11 @@
 ## What and why
 
 I'm sure you're aware of `other-window` command. While it's great for
-two windows, it quickly loses it's value when there are more windows:
+two windows, it quickly loses its value when there are more windows:
 you need to call it many times, and since it's not easily predictable,
 you have to check each time if you're in the window that you wanted.
 
-Another approach is to use `windmove-left`, `windmove-up` etc.  These
+Another approach is to use `windmove-left`, `windmove-up`, etc.  These
 are fast and predictable. Their disadvantage is that they need 4 key
 bindings.  The default ones are shift+arrows, which are hard to reach.
 
