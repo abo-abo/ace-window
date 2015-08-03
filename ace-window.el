@@ -202,7 +202,10 @@ LEAF is (PT . WND)."
                  (char
                   (string (avy--key-to-char (car (last path)))))
                  (path
-		  (mapconcat #'avy--key-to-char (reverse path) ""))
+                  (mapconcat
+                   (lambda (x) (string (avy--key-to-char x)))
+                   (reverse path)
+                   ""))
                  (t
                   (error "Bad `aw-leading-char-style': %S"
                          aw-leading-char-style)))
