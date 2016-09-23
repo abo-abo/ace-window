@@ -394,7 +394,7 @@ Windows are numbered top down, left to right."
         (e2 (window-edges wnd2)))
     (cond ((string< (frame-parameter f1 'window-id)
                     (frame-parameter f2 'window-id))
-           t)
+           nil)
           ((< (car e1) (car e2))
            t)
           ((> (car e1) (car e2))
