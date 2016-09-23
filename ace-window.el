@@ -156,6 +156,9 @@ This will make `ace-window' act different from `other-window' for
 (defvar aw-overlays-back nil
   "Hold overlays for when `aw-background' is t.")
 
+(defvar aw-window-cursors nil
+  "Hold list of (window point) pairs to restore original cursor positions.")
+
 (defvar ace-window-mode nil
   "Minor mode during the selection process.")
 
@@ -172,6 +175,10 @@ Modify them back eventually.")
   "Clean up mode line and overlays."
   ;; mode line
   (aw-set-mode-line nil)
+  ;; restore cursors
+  (dolist (wcpair aw-window-cursors)
+    (funcall #'set-window-point (car wcpair) (cdr wcpair)))
+  (setq aw-window-cursors nil)
   ;; background
   (mapc #'delete-overlay aw-overlays-back)
   (setq aw-overlays-back nil)
@@ -188,6 +195,8 @@ Modify them back eventually.")
 LEAF is (PT . WND)."
   (let ((wnd (cdr leaf)))
     (with-selected-window wnd
+      (push (cons wnd (window-point wnd)) aw-window-cursors)
+      (goto-char (window-start))
       (when (= 0 (buffer-size))
         (push (current-buffer) aw-empty-buffers-list)
         (let ((inhibit-read-only t))
