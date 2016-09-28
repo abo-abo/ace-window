@@ -108,6 +108,11 @@ This will make `ace-window' act different from `other-window' for
   one or two windows."
   :type 'boolean)
 
+(defcustom ace-window-hook '()
+  "Called upon entry into ace-window mode."
+  :type 'hook
+  :group 'ace-window)
+
 (defface aw-leading-char-face
     '((((class color)) (:foreground "red"))
       (((background dark)) (:foreground "gray100"))
@@ -381,7 +386,8 @@ window."
      (ace-select-window))
     (4 (ace-swap-window))
     (16 (ace-delete-window))
-    (t (ace-select-window))))
+    (t (ace-select-window)))
+  (run-hooks 'ace-window-hook))
 
 ;;* Utility
 (defun aw-window< (wnd1 wnd2)
