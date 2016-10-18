@@ -108,6 +108,11 @@ This will make `ace-window' act different from `other-window' for
   one or two windows."
   :type 'boolean)
 
+(defcustom aw-reverse-frame-list nil
+  "When non-nil `ace-window' will order frames for selection in
+the reverse of `frame-list'"
+  :type 'boolean)
+
 (defface aw-leading-char-face
     '((((class color)) (:foreground "red"))
       (((background dark)) (:foreground "gray100"))
@@ -394,7 +399,7 @@ Windows are numbered top down, left to right."
         (e2 (window-edges wnd2)))
     (cond ((string< (frame-parameter f1 'window-id)
                     (frame-parameter f2 'window-id))
-           nil)
+           aw-reverse-frame-list)
           ((< (car e1) (car e2))
            t)
           ((> (car e1) (car e2))
