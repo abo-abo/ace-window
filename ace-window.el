@@ -262,6 +262,7 @@ LEAF is (PT . WND)."
   '((?x aw-delete-window " Ace - Delete Window")
     (?m aw-swap-window " Ace - Swap Window")
     (?M aw-move-window " Ace - Move Window")
+    (?r aw-replace-window " Ace - Replace Window")
     (?n aw-flip-window)
     (?v aw-split-window-vert " Ace - Split Vert Window")
     (?b aw-split-window-horz " Ace - Split Horz Window")
@@ -358,6 +359,13 @@ Amend MODE-LINE to the mode line for the duration of the selection."
              #'aw-swap-window))
 
 ;;;###autoload
+(defun ace-replace-window ()
+  "Ace replace window."
+  (interactive)
+  (aw-select " Ace - Replace Window"
+             #'aw-replace-window))
+
+;;;###autoload
 (defun ace-maximize-window ()
   "Ace maximize window."
   (interactive)
@@ -377,9 +385,14 @@ buffer moves to current window (and current buffer moves to
 selected window).
 
 Prefixed with two \\[universal-argument]'s, deletes the selected
-window."
+window.
+
+Prefixed with a negative \\[universal-argument], replaces
+selected window's buffer with current window's buffer, while
+closing current window."
   (interactive "p")
   (cl-case arg
+    (-1 (ace-replace-window))
     (0
      (setq aw-ignore-on
            (not aw-ignore-on))
@@ -491,6 +504,14 @@ Windows are numbered top down, left to right."
 Switch the current window to the previous buffer."
   (let ((buffer (current-buffer)))
     (switch-to-buffer (other-buffer))
+    (aw-switch-to-window window)
+    (switch-to-buffer buffer)))
+
+(defun aw-replace-window (window)
+  "Move the current buffer to WINDOW.
+Delete current window."
+  (let ((buffer (current-buffer)))
+    (delete-window)
     (aw-switch-to-window window)
     (switch-to-buffer buffer)))
 
