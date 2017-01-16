@@ -263,6 +263,7 @@ LEAF is (PT . WND)."
     (?m aw-swap-window " Ace - Swap Window")
     (?M aw-move-window " Ace - Move Window")
     (?n aw-flip-window)
+    (?c aw-split-window-fair " Ace - Split Fair Window")
     (?v aw-split-window-vert " Ace - Split Vert Window")
     (?b aw-split-window-horz " Ace - Split Horz Window")
     (?i delete-other-windows " Ace - Maximize Window")
@@ -503,6 +504,21 @@ Switch the current window to the previous buffer."
   "Split WINDOW horizontally."
   (select-window window)
   (split-window-horizontally))
+
+(defcustom aw-fair-aspect-ratio 2
+  "The aspect ratio to aim for when splitting windows.
+Sizes are based on the number of characters, not pixels.
+Increase to prefer wider windows, or decrease for taller windows."
+  :type 'number)
+
+(defun aw-split-window-fair (window)
+  "Split WINDOW vertically or horizontally, based on its current dimensions.
+Modify `aw-fair-aspect-ratio' to tweak behavior."
+  (let ((w (window-body-width window))
+        (h (window-body-height window)))
+    (if (< (* h aw-fair-aspect-ratio) w)
+        (aw-split-window-horz window)
+      (aw-split-window-vert window))))
 
 (defun aw-offset (window)
   "Return point in WINDOW that's closest to top left corner.

@@ -50,6 +50,7 @@ You can also start by calling `ace-window` and then decide to switch the action 
 
 - <kbd>x</kbd> - delete window
 - <kbd>m</kbd> - swap (move) window
+- <kbd>c</kbd> - split window fairly, either vertically or horizontally
 - <kbd>v</kbd> - split window vertically
 - <kbd>b</kbd> - split window horizontally
 - <kbd>n</kbd> - select the previous window
@@ -109,6 +110,7 @@ By default is:
     '((?x aw-delete-window " Ace - Delete Window")
         (?m aw-swap-window " Ace - Swap Window")
         (?n aw-flip-window)
+        (?c aw-split-window-fair " Ace - Split Fair Window")
         (?v aw-split-window-vert " Ace - Split Vert Window")
         (?b aw-split-window-horz " Ace - Split Horz Window")
         (?i delete-other-windows " Ace - Maximize Window")
