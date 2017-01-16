@@ -512,7 +512,8 @@ Increase to prefer wider windows, or decrease for taller windows."
   :type 'number)
 
 (defun aw-split-window-fair (window)
-  "Split WINDOW vertically or horizontally, based on its current dimensions."
+  "Split WINDOW vertically or horizontally, based on its current dimensions.
+Modify `aw-fair-aspect-ratio' to tweak behavior."
   (let ((w (window-body-width window))
         (h (window-body-height window)))
     (if (< (* h aw-fair-aspect-ratio) w)
