@@ -70,7 +70,8 @@
   :prefix "aw-")
 
 (defcustom aw-keys '(?1 ?2 ?3 ?4 ?5 ?6 ?7 ?8 ?9)
-  "Keys for selecting window.")
+  "Keys for selecting window."
+  :type '(repeat character))
 
 (defcustom aw-scope 'global
   "The scope used by `ace-window'."
