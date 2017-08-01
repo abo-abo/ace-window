@@ -94,7 +94,7 @@ Use M-0 `ace-window' to toggle this value."
   :type 'boolean)
 
 (defcustom aw-background t
-  "When t, `ace-window' will dim out all buffers temporarily when used.'."
+  "When t, `ace-window' will dim out all buffers temporarily when used."
   :type 'boolean)
 
 (defcustom aw-leading-char-style 'char
