@@ -469,7 +469,8 @@ Windows are numbered top down, left to right."
                    (cl-destructuring-bind (key fn &optional description) action
                      (format "%s: %s" (char-to-string key) (or description fn))))
                  aw-dispatch-alist
-                 "\n")))
+                 "\n"))
+  (call-interactively 'ace-window))
 
 (defun aw-delete-window (window)
   "Delete window WINDOW."
