@@ -115,10 +115,10 @@ the reverse of `frame-list'"
   :type 'boolean)
 
 (defface aw-leading-char-face
-    '((((class color)) (:foreground "red"))
-      (((background dark)) (:foreground "gray100"))
-      (((background light)) (:foreground "gray0"))
-      (t (:foreground "gray100" :underline nil)))
+  '((((class color)) (:foreground "red"))
+    (((background dark)) (:foreground "gray100"))
+    (((background light)) (:foreground "gray0"))
+    (t (:foreground "gray100" :underline nil)))
   "Face for each window's leading char.")
 
 (defface aw-background-face
@@ -126,8 +126,12 @@ the reverse of `frame-list'"
   "Face for whole window background during selection.")
 
 (defface aw-mode-line-face
-    '((t (:inherit mode-line-buffer-id)))
+  '((t (:inherit mode-line-buffer-id)))
   "Face used for displaying the ace window key in the mode-line.")
+
+(defface aw-key-face
+  '((t :inherit font-lock-builtin-face))
+  "Face used by `aw-show-dispatch-help'.")
 
 ;;* Implementation
 (defun aw-ignored-p (window)
@@ -374,7 +378,7 @@ Amend MODE-LINE to the mode line for the duration of the selection."
              #'delete-other-windows))
 
 (define-obsolete-function-alias
-  'ace-maximize-window 'ace-delete-other-windows "0.10.0")
+    'ace-maximize-window 'ace-delete-other-windows "0.10.0")
 
 ;;;###autoload
 (defun ace-window (arg)
@@ -467,7 +471,11 @@ Windows are numbered top down, left to right."
   (message "%s" (mapconcat
                  (lambda (action)
                    (cl-destructuring-bind (key fn &optional description) action
-                     (format "%s: %s" (char-to-string key) (or description fn))))
+                     (format "%s: %s"
+                             (propertize
+                              (char-to-string key)
+                              'face 'aw-key-face)
+                             (or description fn))))
                  aw-dispatch-alist
                  "\n"))
   (call-interactively 'ace-window))
@@ -568,7 +576,7 @@ The point is writable, i.e. it's not part of space after newline."
 ;;* Mode line
 ;;;###autoload
 (define-minor-mode ace-window-display-mode
-    "Minor mode for showing the ace window key in the mode line."
+  "Minor mode for showing the ace window key in the mode line."
   :global t
   (if ace-window-display-mode
       (progn
