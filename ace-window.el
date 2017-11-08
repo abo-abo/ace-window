@@ -260,28 +260,33 @@ LEAF is (PT . WND)."
   (force-mode-line-update))
 
 (defvar aw-dispatch-alist
-  '((?x aw-delete-window " Ace - Delete Window")
-    (?m aw-swap-window " Ace - Swap Window")
-    (?M aw-move-window " Ace - Move Window")
-    (?j aw-switch-buffer-in-window " Ace - Select Buffer")
+  '((?x aw-delete-window "Delete Window")
+    (?m aw-swap-window "Swap Window")
+    (?M aw-move-window "Move Window")
+    (?j aw-switch-buffer-in-window "Select Buffer")
     (?n aw-flip-window)
-    (?c aw-split-window-fair " Ace - Split Fair Window")
-    (?v aw-split-window-vert " Ace - Split Vert Window")
-    (?b aw-split-window-horz " Ace - Split Horz Window")
-    (?i delete-other-windows " Ace - Delete Other Windows")
+    (?c aw-split-window-fair "Split Fair Window")
+    (?v aw-split-window-vert "Split Vert Window")
+    (?b aw-split-window-horz "Split Horz Window")
+    (?i delete-other-windows "Delete Other Windows")
     (?o delete-other-windows))
   "List of actions for `aw-dispatch-default'.")
 
+(defun aw--dispatch-action (char)
+  "Return item from `aw-dispatch-alist' matching CHAR."
+  (assoc char aw-dispatch-alist))
+
 (defun aw-dispatch-default (char)
   "Perform an action depending on CHAR."
-  (let ((val (cdr (assoc char aw-dispatch-alist))))
-    (if val
-        (if (and (car val) (cadr val))
-            (prog1 (setq aw-action (car val))
-              (aw-set-mode-line (cadr val)))
-          (funcall (car val))
-          (throw 'done 'exit))
-      (avy-handler-default char))))
+  (let ((action (aw--dispatch-action char)))
+    (cl-destructuring-bind (_key fn &optional description) (aw--dispatch-action char)
+      (if action
+          (if (and fn description)
+              (prog1 (setq aw-action fn)
+                (aw-set-mode-line (format " Ace - %s" description)))
+            (funcall fn)
+            (throw 'done 'exit))
+        (avy-handler-default char)))))
 
 (defun aw-select (mode-line &optional action)
   "Return a selected other window.
