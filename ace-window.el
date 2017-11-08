@@ -299,8 +299,8 @@ Amend MODE-LINE to the mode line for the duration of the selection."
                  (when aw-dispatch-always
                    (setq aw-action
                          (unwind-protect
-                              (catch 'done
-                                (funcall aw-dispatch-function (read-char)))
+                             (catch 'done
+                               (funcall aw-dispatch-function (read-char)))
                            (aw--done)))
                    (when (eq aw-action 'exit)
                      (setq aw-action nil)))
@@ -324,15 +324,15 @@ Amend MODE-LINE to the mode line for the duration of the selection."
                    ;; turn off helm transient map
                    (remove-hook 'post-command-hook 'helm--maybe-update-keymap)
                    (unwind-protect
-                        (let* ((avy-handler-function aw-dispatch-function)
-                               (avy-translate-char-function #'identity)
-                               (res (avy-read (avy-tree candidate-list aw-keys)
-                                              #'aw--lead-overlay
-                                              #'avy--remove-leading-chars)))
-                          (if (eq res 'exit)
-                              (setq aw-action nil)
-                            (or (cdr res)
-                                start-window)))
+                       (let* ((avy-handler-function aw-dispatch-function)
+                              (avy-translate-char-function #'identity)
+                              (res (avy-read (avy-tree candidate-list aw-keys)
+                                             #'aw--lead-overlay
+                                             #'avy--remove-leading-chars)))
+                         (if (eq res 'exit)
+                             (setq aw-action nil)
+                           (or (cdr res)
+                               start-window)))
                      (aw--done))))))
     (if aw-action
         (funcall aw-action window)
