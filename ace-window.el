@@ -269,7 +269,8 @@ LEAF is (PT . WND)."
     (?v aw-split-window-vert "Split Vert Window")
     (?b aw-split-window-horz "Split Horz Window")
     (?i delete-other-windows "Delete Other Windows")
-    (?o delete-other-windows))
+    (?o delete-other-windows)
+    (?? aw-show-dispatch-help))
   "List of actions for `aw-dispatch-default'.")
 
 (defun aw--dispatch-action (char)
@@ -459,6 +460,16 @@ Windows are numbered top down, left to right."
   "Switch to the window you were previously in."
   (interactive)
   (aw-switch-to-window (aw--pop-window)))
+
+(defun aw-show-dispatch-help ()
+  "Display action shortucts in echo area."
+  (interactive)
+  (message "%s" (mapconcat
+                 (lambda (action)
+                   (cl-destructuring-bind (key fn &optional description) action
+                     (format "%s: %s" (char-to-string key) (or description fn))))
+                 aw-dispatch-alist
+                 "\n")))
 
 (defun aw-delete-window (window)
   "Delete window WINDOW."
