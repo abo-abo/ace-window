@@ -57,7 +57,9 @@ You can also start by calling `ace-window` and then decide to switch the action 
 - <kbd>i</kbd> - maximize window (select which window)
 - <kbd>o</kbd> - maximize current window
 
-In order for it to work, these keys *must not* be in `aw-keys` and you have to have `aw-dispatch-always` set to `t`.
+In order for it to work, these keys *must not* be in
+`aw-keys`. Additionally, if you want these keys to work with less than
+three windows, you need to have `aw-dispatch-always` set to `t`.
 
 ## Customization
 Aside from binding `ace-window`:
