@@ -478,6 +478,7 @@ Windows are numbered top down, left to right."
                              (or description fn))))
                  aw-dispatch-alist
                  "\n"))
+  (mapc #'delete-overlay aw-overlays-back)
   (call-interactively 'ace-window))
 
 (defun aw-delete-window (window)
