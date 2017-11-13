@@ -496,7 +496,9 @@ Windows are numbered top down, left to right."
 (defun aw-switch-buffer-in-window (window)
   "Select buffer in WINDOW."
   (aw-switch-to-window window)
-  (call-interactively 'switch-to-buffer))
+  (if (bound-and-true-p ivy-mode)
+      (ivy-switch-buffer)
+    (call-interactively 'switch-to-buffer)))
 
 (defcustom aw-swap-invert nil
   "When non-nil, the other of the two swapped windows gets the point."
