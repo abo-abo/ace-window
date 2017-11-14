@@ -283,15 +283,17 @@ LEAF is (PT . WND)."
 
 (defun aw-dispatch-default (char)
   "Perform an action depending on CHAR."
-  (let ((action (aw--dispatch-action char)))
-    (cl-destructuring-bind (_key fn &optional description) (aw--dispatch-action char)
-      (if action
-          (if (and fn description)
-              (prog1 (setq aw-action fn)
-                (aw-set-mode-line (format " Ace - %s" description)))
-            (funcall fn)
-            (throw 'done 'exit))
-        (avy-handler-default char)))))
+  (if (= char (aref (kbd "C-g") 0))
+      (throw 'done 'exit)
+    (let ((action (aw--dispatch-action char)))
+      (cl-destructuring-bind (_key fn &optional description) (aw--dispatch-action char)
+        (if action
+            (if (and fn description)
+                (prog1 (setq aw-action fn)
+                  (aw-set-mode-line (format " Ace - %s" description)))
+              (funcall fn)
+              (throw 'done 'exit))
+          (avy-handler-default char))))))
 
 (defun aw-select (mode-line &optional action)
   "Return a selected other window.
