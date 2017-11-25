@@ -273,6 +273,7 @@ LEAF is (PT . WND)."
     (?M aw-move-window "Move Window")
     (?j aw-switch-buffer-in-window "Select Buffer")
     (?n aw-flip-window)
+    (?u aw-switch-buffer-other-window "Switch Buffer Other Window")
     (?c aw-split-window-fair "Split Fair Window")
     (?v aw-split-window-vert "Split Vert Window")
     (?b aw-split-window-horz "Split Horz Window")
@@ -569,6 +570,12 @@ Modify `aw-fair-aspect-ratio' to tweak behavior."
     (if (< (* h aw-fair-aspect-ratio) w)
         (aw-split-window-horz window)
       (aw-split-window-vert window))))
+
+(defun aw-switch-buffer-other-window (window)
+  "Switch buffer in WINDOW without selecting WINDOW."
+  (aw-switch-to-window window)
+  (aw--switch-buffer)
+  (aw-flip-window))
 
 (defun aw-offset (window)
   "Return point in WINDOW that's closest to top left corner.
