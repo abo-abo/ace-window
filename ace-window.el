@@ -505,6 +505,8 @@ Windows are numbered top down, left to right."
   (aw-switch-to-window window)
   (aw--switch-buffer))
 
+(declare-function ivy-switch-buffer "ext:ivy")
+
 (defun aw--switch-buffer ()
   (cond ((bound-and-true-p ivy-mode)
          (ivy-switch-buffer))
