@@ -118,6 +118,17 @@ This will make `ace-window' act different from `other-window' for
 the reverse of `frame-list'"
   :type 'boolean)
 
+(defcustom aw-frame-offset '(13 . 23)
+  "Increase in pixel offset for new ace-window frames relative to the selected frame.
+Its value is an (x-offset . y-offset) pair in pixels."
+  :type '(cons integer integer))
+
+(defcustom aw-frame-size nil
+  "Frame size to make new ace-window frames.
+Its value is a (width . height) pair in pixels or nil for the default frame size.
+(0 . 0) is special and means make the frame size the same as the last selected frame size."
+  :type '(cons integer integer))
+
 (defface aw-leading-char-face
   '((((class color)) (:foreground "red"))
     (((background dark)) (:foreground "gray100"))
@@ -279,19 +290,47 @@ LEAF is (PT . WND)."
     (?b aw-split-window-horz "Split Horz Window")
     (?i delete-other-windows "Delete Other Windows")
     (?o delete-other-windows)
-    (?? aw-show-dispatch-help))
+    (?? aw-show-dispatch-help)
+    (?z aw-use-frame "Use new frame"))
   "List of actions for `aw-dispatch-default'.")
 
 (defun aw--dispatch-action (char)
   "Return item from `aw-dispatch-alist' matching CHAR."
   (assoc char aw-dispatch-alist))
 
+(defun aw-make-frame ()
+  "Make a new Emacs frame using the values of `aw-frame-size' and `aw-frame-offset'."
+  (make-frame
+   (delq nil
+         (list (when aw-frame-size
+                 (cons 'width
+                       (if (zerop (car aw-frame-size))
+                           (frame-width)
+                         (car aw-frame-size))))
+               (when aw-frame-size
+                 (cons 'height
+                       (if (zerop (cdr aw-frame-size))
+                           (frame-height)
+                         (car aw-frame-size))))
+               (cons 'left (+ (car aw-frame-offset)
+                              (car (frame-position))))
+               (cons 'top (+ (cdr aw-frame-offset)
+                             (cdr (frame-position))))))))
+
+(defun aw-use-frame (window)
+  "Create a new frame using the contents of WINDOW.
+
+The same size as the previous frame, offset by `aw-frame-offset'
+pixels."
+  (aw-switch-to-window window)
+  (aw-make-frame))
+
 (defun aw-dispatch-default (char)
   "Perform an action depending on CHAR."
   (if (= char (aref (kbd "C-g") 0))
       (throw 'done 'exit)
     (let ((action (aw--dispatch-action char)))
-      (cl-destructuring-bind (_key fn &optional description) (aw--dispatch-action char)
+      (cl-destructuring-bind (_key fn &optional description) action
         (if action
             (if (and fn description)
                 (prog1 (setq aw-action fn)
