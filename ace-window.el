@@ -280,7 +280,7 @@ LEAF is (PT . WND)."
 
 (defvar aw-dispatch-alist
   '((?x aw-delete-window "Delete Window")
-    (?m aw-swap-window "Swap Window")
+    (?m aw-swap-window "Swap Windows")
     (?M aw-move-window "Move Window")
     (?j aw-switch-buffer-in-window "Select Buffer")
     (?n aw-flip-window)
@@ -288,7 +288,6 @@ LEAF is (PT . WND)."
     (?c aw-split-window-fair "Split Fair Window")
     (?v aw-split-window-vert "Split Vert Window")
     (?b aw-split-window-horz "Split Horz Window")
-    (?i delete-other-windows "Delete Other Windows")
     (?o delete-other-windows)
     (?? aw-show-dispatch-help)
     (?z aw-use-frame "Use new frame"))
