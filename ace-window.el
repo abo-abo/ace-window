@@ -80,6 +80,9 @@
           (const :tag "global" global)
           (const :tag "frame" frame)))
 
+(defcustom aw-minibuffer-flag nil
+  "When non-nil, also display `ace-window-mode' string in the minibuffer when ace-window is active.")
+
 (defcustom aw-ignored-buffers '("*Calc Trail*" "*LV*")
   "List of buffers to ignore when selecting window."
   :type '(repeat string))
@@ -283,6 +286,7 @@ LEAF is (PT . WND)."
 (defun aw-set-mode-line (str)
   "Set mode line indicator to STR."
   (setq ace-window-mode str)
+  (if aw-minibuffer-flag (message "%s" str))
   (force-mode-line-update))
 
 (defvar aw-dispatch-alist
@@ -347,21 +351,32 @@ LEAF is (PT . WND)."
              (signal 'user-error (list "No such window" avy-current-path))
              (throw 'done nil))))))
 
+(defun aw-mouse-click-event-p (char)
+  "If CHAR is a mouse event, return the window of the event if any or the selected window.
+Return nil if not a mouse event."
+  (when (mouse-event-p char)
+    (cond ((windowp (posn-window (event-start char)))
+	   (posn-window (event-start char)))
+	  ((framep (posn-window (event-start char)))
+	   (frame-selected-window (posn-window (event-start char))))
+	  (t (selected-window)))))
+
 (defun aw-dispatch-default (char)
   "Perform an action depending on CHAR."
-  (if (= char (aref (kbd "C-g") 0))
-      (throw 'done 'exit)
-    (let ((action (aw--dispatch-action char)))
-      ;; Prevent cl-destructuring-bind from triggering an error when
-      ;; given too few arguments.
-      (cl-destructuring-bind (_key fn &optional description) (or action '(nil nil nil))
-        (if action
-            (if (and fn description)
-                (prog1 (setq aw-action fn)
-                  (aw-set-mode-line (format " Ace - %s" description)))
-              (funcall fn)
-              (throw 'done 'exit))
-	  (funcall aw-avy-handler-function char))))))
+  (cond ((aw-mouse-click-event-p char))
+	((= char (aref (kbd "C-g") 0))
+	 (throw 'done 'exit))
+	(t (let ((action (aw--dispatch-action char)))
+	     ;; Prevent cl-destructuring-bind from triggering an error when
+	     ;; given too few arguments.
+	     (cl-destructuring-bind (_key fn &optional description) (or action '(nil nil nil))
+               (if action
+		   (if (and fn description)
+                       (prog1 (setq aw-action fn)
+			 (aw-set-mode-line (format " Ace - %s" description)))
+		     (funcall fn)
+		     (throw 'done 'exit))
+		 (funcall aw-avy-handler-function char)))))))
 
 (defun aw-avy-read (tree display-fn cleanup-fn)
   "Select a leaf from TREE using consecutive `read-char'.
@@ -382,16 +397,19 @@ multiple DISPLAY-FN invocations."
         (dolist (x avy--leafs)
           (funcall display-fn (car x) (cdr x))))
       (let ((char (funcall avy-translate-char-function (read-key)))
+	    window
             branch)
         (funcall cleanup-fn)
-	;; Ensure avy-current-path stores the full path given before
-	;; exit for testing when an invalid path character is given.
-        (setq avy-current-path
-              (concat avy-current-path (string (avy--key-to-char char))))
-        (if (setq branch (assoc char tree))
-            (if (eq (car (setq tree (cdr branch))) 'leaf)
-                (throw 'done (cdr tree)))
-          (funcall avy-handler-function char))))))
+	(if (setq window (aw-mouse-click-event-p char))
+	    (throw 'done (cons char window))
+	  ;; Ensure avy-current-path stores the full path given before
+	  ;; exit for testing when an invalid path character is given.
+          (setq avy-current-path
+		(concat avy-current-path (string (avy--key-to-char char))))
+          (if (setq branch (assoc char tree))
+              (if (eq (car (setq tree (cdr branch))) 'leaf)
+                  (throw 'done (cdr tree)))
+            (funcall avy-handler-function char)))))))
 
 (defun aw-select (mode-line &optional action)
   "Return a selected other window.
@@ -414,7 +432,8 @@ Amend MODE-LINE to the mode line for the duration of the selection."
                            (aw--done)))
                    (when (eq aw-action 'exit)
                      (setq aw-action nil)))
-                 (or (car wnd-list) start-window))
+                 (or (and (windowp aw-action) aw-action)
+		     (car wnd-list) start-window))
                 ((and (<= (length wnd-list) aw-dispatch-when-more-than)
                       (not aw-dispatch-always)
                       (not aw-ignore-current))
