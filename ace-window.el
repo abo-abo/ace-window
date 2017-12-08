@@ -80,6 +80,10 @@
           (const :tag "global" global)
           (const :tag "frame" frame)))
 
+(defcustom aw-minibuffer-flag nil
+  "When non-nil, also display `ace-window-mode' string in the minibuffer when ace-window is active."
+  :type 'boolean)
+
 (defcustom aw-ignored-buffers '("*Calc Trail*" "*LV*")
   "List of buffers to ignore when selecting window."
   :type '(repeat string))
@@ -276,6 +280,7 @@ LEAF is (PT . WND)."
 (defun aw-set-mode-line (str)
   "Set mode line indicator to STR."
   (setq ace-window-mode str)
+  (if aw-minibuffer-flag (message "%s" str))
   (force-mode-line-update))
 
 (defvar aw-dispatch-alist
