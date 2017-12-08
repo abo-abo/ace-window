@@ -351,19 +351,9 @@ LEAF is (PT . WND)."
              (signal 'user-error (list "No such window" avy-current-path))
              (throw 'done nil))))))
 
-(defun aw-mouse-click-event-p (char)
-  "If CHAR is a mouse event, return the window of the event if any or the selected window.
-Return nil if not a mouse event."
-  (when (mouse-event-p char)
-    (cond ((windowp (posn-window (event-start char)))
-	   (posn-window (event-start char)))
-	  ((framep (posn-window (event-start char)))
-	   (frame-selected-window (posn-window (event-start char))))
-	  (t (selected-window)))))
-
 (defun aw-dispatch-default (char)
   "Perform an action depending on CHAR."
-  (cond ((aw-mouse-click-event-p char))
+  (cond ((avy-mouse-press-event-p char))
 	((= char (aref (kbd "C-g") 0))
 	 (throw 'done 'exit))
 	(t (let ((action (aw--dispatch-action char)))
@@ -377,39 +367,6 @@ Return nil if not a mouse event."
 		     (funcall fn)
 		     (throw 'done 'exit))
 		 (funcall aw-avy-handler-function char)))))))
-
-(defun aw-avy-read (tree display-fn cleanup-fn)
-  "Select a leaf from TREE using consecutive `read-char'.
-
-DISPLAY-FN should take CHAR and LEAF and signify that LEAFs
-associated with CHAR will be selected if CHAR is pressed.  This is
-commonly done by adding a CHAR overlay at LEAF position.
-
-CLEANUP-FN should take no arguments and remove the effects of
-multiple DISPLAY-FN invocations."
-  (catch 'done
-    (setq avy-current-path "")
-    (while tree
-      (let ((avy--leafs nil))
-        (avy-traverse tree
-                      (lambda (path leaf)
-                        (push (cons path leaf) avy--leafs)))
-        (dolist (x avy--leafs)
-          (funcall display-fn (car x) (cdr x))))
-      (let ((char (funcall avy-translate-char-function (read-key)))
-	    window
-            branch)
-        (funcall cleanup-fn)
-	(if (setq window (aw-mouse-click-event-p char))
-	    (throw 'done (cons char window))
-	  ;; Ensure avy-current-path stores the full path given before
-	  ;; exit for testing when an invalid path character is given.
-          (setq avy-current-path
-		(concat avy-current-path (string (avy--key-to-char char))))
-          (if (setq branch (assoc char tree))
-              (if (eq (car (setq tree (cdr branch))) 'leaf)
-                  (throw 'done (cdr tree)))
-            (funcall avy-handler-function char)))))))
 
 (defun aw-select (mode-line &optional action)
   "Return a selected other window.
@@ -455,9 +412,9 @@ Amend MODE-LINE to the mode line for the duration of the selection."
                    (unwind-protect
                         (let* ((avy-handler-function aw-dispatch-function)
                                (avy-translate-char-function #'identity)
-                               (res (aw-avy-read (avy-tree candidate-list aw-keys)
-						 #'aw--lead-overlay
-						 #'avy--remove-leading-chars)))
+                               (res (avy-read (avy-tree candidate-list aw-keys)
+					      #'aw--lead-overlay
+					      #'avy--remove-leading-chars)))
                           (if (eq res 'exit)
                               (setq aw-action nil)
                             (or (cdr res)
