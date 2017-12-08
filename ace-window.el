@@ -80,6 +80,9 @@
           (const :tag "global" global)
           (const :tag "frame" frame)))
 
+(defcustom aw-minibuffer-flag nil
+  "When non-nil, also display `ace-window-mode' string in the minibuffer when ace-window is active.")
+
 (defcustom aw-ignored-buffers '("*Calc Trail*" "*LV*")
   "List of buffers to ignore when selecting window."
   :type '(repeat string))
@@ -117,6 +120,21 @@ This will make `ace-window' act different from `other-window' for
   "When non-nil `ace-window' will order frames for selection in
 the reverse of `frame-list'"
   :type 'boolean)
+
+(defcustom aw-frame-offset '(13 . 23)
+  "Increase in pixel offset for new ace-window frames relative to the selected frame.
+Its value is an (x-offset . y-offset) pair in pixels."
+  :type '(cons integer integer))
+
+(defcustom aw-frame-size nil
+  "Frame size to make new ace-window frames.
+Its value is a (width . height) pair in pixels or nil for the default frame size.
+(0 . 0) is special and means make the frame size the same as the last selected frame size."
+  :type '(cons integer integer))
+
+(defcustom aw-make-frame-char ?z
+  "Non-existing ace window identifier character that triggers creation of a new single-window frame for display."
+  :type 'character)
 
 (defface aw-leading-char-face
   '((((class color)) (:foreground "red"))
@@ -166,6 +184,9 @@ the reverse of `frame-list'"
       (t
        (error "Invalid `aw-scope': %S" aw-scope))))
    'aw-window<))
+
+(defvar aw-avy-handler-function 'aw--avy-handler-default
+  "A function to call for a bad `read-key' in ace-window use of `avy-read'.")
 
 (defvar aw-overlays-back nil
   "Hold overlays for when `aw-background' is t.")
@@ -265,11 +286,12 @@ LEAF is (PT . WND)."
 (defun aw-set-mode-line (str)
   "Set mode line indicator to STR."
   (setq ace-window-mode str)
+  (if aw-minibuffer-flag (message "%s" str))
   (force-mode-line-update))
 
 (defvar aw-dispatch-alist
   '((?x aw-delete-window "Delete Window")
-    (?m aw-swap-window "Swap Window")
+    (?m aw-swap-window "Swap Windows")
     (?M aw-move-window "Move Window")
     (?j aw-switch-buffer-in-window "Select Buffer")
     (?n aw-flip-window)
@@ -277,8 +299,7 @@ LEAF is (PT . WND)."
     (?c aw-split-window-fair "Split Fair Window")
     (?v aw-split-window-vert "Split Vert Window")
     (?b aw-split-window-horz "Split Horz Window")
-    (?i delete-other-windows "Delete Other Windows")
-    (?o delete-other-windows)
+    (?o delete-other-windows "Delete Other Windows")
     (?? aw-show-dispatch-help))
   "List of actions for `aw-dispatch-default'.")
 
@@ -286,19 +307,66 @@ LEAF is (PT . WND)."
   "Return item from `aw-dispatch-alist' matching CHAR."
   (assoc char aw-dispatch-alist))
 
+(defun aw-make-frame ()
+  "Make a new Emacs frame using the values of `aw-frame-size' and `aw-frame-offset'."
+  (make-frame (delq nil (list (when aw-frame-size
+				(cons 'width
+				      (if (zerop (car aw-frame-size))
+					  (frame-width)
+					(car aw-frame-size))))
+			      (when aw-frame-size
+				(cons 'height
+				      (if (zerop (cdr aw-frame-size))
+					  (frame-height)
+					(car aw-frame-size))))
+			      (cons 'left (+ (car aw-frame-offset)
+					     (car (frame-position))))
+			      (cons 'top  (+ (cdr aw-frame-offset)
+					     (cdr (frame-position))))))))
+
+(defun aw--avy-handler-default (char)
+  "The default ace-window handler for a bad CHAR."
+  (let (dispatch)
+    (cond ((setq dispatch (assoc char avy-dispatch-alist))
+           (setq avy-action (cdr dispatch))
+           (throw 'done 'restart))
+          ((memq char '(27 ?\C-g))
+           ;; exit silently
+           (throw 'done 'exit))
+          (t
+	   ;; Remove any possible ace-window command char that may
+	   ;; precede the last specified window identifier.
+	   (when (and (> (length avy-current-path) 0)
+		      (assq (aref avy-current-path 0) aw-dispatch-alist))
+	     (setq avy-current-path (substring avy-current-path 1)))
+	   (if (and aw-make-frame-char (string-equal (char-to-string aw-make-frame-char)
+						     avy-current-path))
+	       ;; Create a new frame the same size as the previous
+	       ;; frame, offset by aw-frame-offset (x . y) pixels.
+	       (let ((start-win (selected-window))
+		     (release-win (frame-selected-window (aw-make-frame))))
+                 (unless (equal (selected-window) start-win)
+                   (select-frame-set-input-focus (window-frame start-win)))
+		 (throw 'done (cons nil release-win)))
+             (signal 'user-error (list "No such window" avy-current-path))
+             (throw 'done nil))))))
+
 (defun aw-dispatch-default (char)
   "Perform an action depending on CHAR."
-  (if (= char (aref (kbd "C-g") 0))
-      (throw 'done 'exit)
-    (let ((action (aw--dispatch-action char)))
-      (cl-destructuring-bind (_key fn &optional description) (aw--dispatch-action char)
-        (if action
-            (if (and fn description)
-                (prog1 (setq aw-action fn)
-                  (aw-set-mode-line (format " Ace - %s" description)))
-              (funcall fn)
-              (throw 'done 'exit))
-          (avy-handler-default char))))))
+  (cond ((avy-mouse-press-event-p char))
+	((= char (aref (kbd "C-g") 0))
+	 (throw 'done 'exit))
+	(t (let ((action (aw--dispatch-action char)))
+	     ;; Prevent cl-destructuring-bind from triggering an error when
+	     ;; given too few arguments.
+	     (cl-destructuring-bind (_key fn &optional description) (or action '(nil nil nil))
+               (if action
+		   (if (and fn description)
+                       (prog1 (setq aw-action fn)
+			 (aw-set-mode-line (format " Ace - %s" description)))
+		     (funcall fn)
+		     (throw 'done 'exit))
+		 (funcall aw-avy-handler-function char)))))))
 
 (defun aw-select (mode-line &optional action)
   "Return a selected other window.
@@ -321,7 +389,8 @@ Amend MODE-LINE to the mode line for the duration of the selection."
                            (aw--done)))
                    (when (eq aw-action 'exit)
                      (setq aw-action nil)))
-                 (or (car wnd-list) start-window))
+                 (or (and (windowp aw-action) aw-action)
+		     (car wnd-list) start-window))
                 ((and (<= (length wnd-list) aw-dispatch-when-more-than)
                       (not aw-dispatch-always)
                       (not aw-ignore-current))
@@ -344,8 +413,8 @@ Amend MODE-LINE to the mode line for the duration of the selection."
                         (let* ((avy-handler-function aw-dispatch-function)
                                (avy-translate-char-function #'identity)
                                (res (avy-read (avy-tree candidate-list aw-keys)
-                                              #'aw--lead-overlay
-                                              #'avy--remove-leading-chars)))
+					      #'aw--lead-overlay
+					      #'avy--remove-leading-chars)))
                           (if (eq res 'exit)
                               (setq aw-action nil)
                             (or (cdr res)
@@ -402,6 +471,16 @@ selected window).
 Prefixed with two \\[universal-argument]'s, deletes the selected
 window."
   (interactive "p")
+  ;; Signal an error if `aw-make-frame-char' is ever set to an invalid
+  ;; or conflicting value.
+  (when aw-make-frame-char
+    (cond ((not (characterp aw-make-frame-char))
+	   (user-error "`aw-make-frame-char' must be a character, not `%s'" aw-make-frame-char))
+	  ((memq aw-make-frame-char aw-keys)
+	   (user-error "`aw-make-frame-char' is `%c'; remove this character from `aw-keys'" aw-make-frame-char))
+	  ((assq aw-make-frame-char aw-dispatch-alist)
+	   (user-error "`aw-make-frame-char' is `%c'; remove this character from `aw-dispatch-alist'" aw-make-frame-char))))
+  (setq avy-current-path "")
   (cl-case arg
     (0
      (setq aw-ignore-on
