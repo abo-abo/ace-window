@@ -26,11 +26,12 @@
 
 ;;; Commentary:
 ;;
-;; The main function, `ace-window' is meant to replace `other-window'.
-;; In fact, when there are only two windows present, `other-window' is
-;; called.  If there are more, each window will have its first
-;; character highlighted.  Pressing that character will switch to that
-;; window.
+;; The main function, `ace-window' is meant to replace `other-window'
+;; by assigning each window a short, unique label.  When there are only
+;; two windows present, `other-window' is called (unless
+;; aw-dispatch-always is set non-nil).  If there are more, each
+;; window will have its first label character highlighted.  Once a
+;; unique label is typed, ace-window will switch to that window.  
 ;;
 ;; To setup this package, just add to your .emacs:
 ;;
@@ -38,23 +39,24 @@
 ;;
 ;; replacing "M-p"  with an appropriate shortcut.
 ;;
-;; Depending on your window usage patterns, you might want to set
+;; By default, ace-window uses numbers for window labels so the window
+;; labeling is intuitively ordered.  But if you prefer to type keys on
+;; your home row for quicker access, use this setting:
 ;;
 ;;    (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l))
 ;;
-;; This way they are all on the home row, although the intuitive
-;; ordering is lost.
-;;
-;; If you don't want the gray background that makes the red selection
-;; characters stand out more, set this:
+;; Whenever ace-window prompts for a window selection, it grays out
+;; all the window characters, highlighting window labels in red.  To
+;; disable this behavior, set this:
 ;;
 ;;    (setq aw-background nil)
 ;;
-;; If you want to know the selection characters ahead of time, you can
-;; turn on `ace-window-display-mode'.
+;; If you want to know the selection characters ahead of time, turn on
+;; `ace-window-display-mode'.
 ;;
 ;; When prefixed with one `universal-argument', instead of switching
-;; to selected window, the selected window is swapped with current one.
+;; to the selected window, the selected window is swapped with the
+;; current one. 
 ;;
 ;; When prefixed with two `universal-argument', the selected window is
 ;; deleted instead.
@@ -85,11 +87,13 @@
   :type 'boolean)
 
 (defcustom aw-ignored-buffers '("*Calc Trail*" "*LV*")
-  "List of buffers and major-modes to ignore when selecting a window."
+  "List of buffers and major-modes to ignore when choosing a window from the window list.
+Active only when `aw-ignore-on' is non-nil.  Windows displaying these
+buffers can still be chosen by typing their specific labels."
   :type '(repeat string))
 
 (defcustom aw-ignore-on t
-  "When t, `ace-window' will ignore `aw-ignored-buffers'.
+  "When t, `ace-window' will ignore buffers and major-modes in `aw-ignored-buffers'.
 Use M-0 `ace-window' to toggle this value."
   :type 'boolean)
 
@@ -165,7 +169,7 @@ or
   (set option value))
 
 (defcustom aw-make-frame-char ?z
-  "Non-existing ace window identifier character that triggers creation of a new single-window frame for display."
+  "Non-existing ace window label character that triggers creation of a new single-window frame for display."
   :set 'aw-set-make-frame-char
   :type 'character)
 
@@ -190,14 +194,18 @@ or
 
 ;;* Implementation
 (defun aw-ignored-p (window)
-  "Return t if WINDOW should be ignored."
-  (or (and aw-ignore-on
-	   (or (memq (buffer-local-value 'major-mode (window-buffer window))
-		     aw-ignored-buffers)
-               (member (buffer-name (window-buffer window))
-                       aw-ignored-buffers)))
-      (and aw-ignore-current
-           (equal window (selected-window)))))
+  "Return t if WINDOW should be ignored when choosing from the window list."
+  (or 
+   ;; When `ignore-window-parameters' is nil, ignore windows whose
+   ;; `no-other-window’ parameter is non-nil.
+   (and (not ignore-window-parameters)
+	(window-parameter window 'no-other-window)) 
+   ;; Ignore major-modes and buffer-names in `aw-ignored-buffers'.
+   (memq (buffer-local-value 'major-mode (window-buffer window))
+	 aw-ignored-buffers)
+   (member (buffer-name (window-buffer window)) aw-ignored-buffers)
+   ;; Ignore selected window if `aw-ignore-current' is non-nil.
+   (and aw-ignore-current (equal window (selected-window)))))
 
 (defun aw-window-list ()
   "Return the list of interesting windows."
@@ -373,9 +381,9 @@ pixels."
 		     (funcall fn)
 		     (throw 'done 'exit))
 		 ;; Remove any possible ace-window command char that may
-		 ;; precede the last specified window identifier so
+		 ;; precede the last specified window label, so
 		 ;; functions can use `avy-current-path' as the chosen
-		 ;; window id.
+		 ;; window label.
 		 (when (and (> (length avy-current-path) 0)
 			    (assq (aref avy-current-path 0) aw-dispatch-alist))
 		   (setq avy-current-path (substring avy-current-path 1)))
@@ -714,14 +722,21 @@ The point is writable, i.e. it's not part of space after newline."
 (defun aw-update (&optional _frame)
   "Update ace-window-path window parameter for all windows."
   ;; Ignored _frame argument is required when used as part of `after-make-frame-functions'.
-  (avy-traverse
-   (avy-tree (aw-window-list) aw-keys)
-   (lambda (path leaf)
-     (set-window-parameter
-      leaf 'ace-window-path
-      (propertize
-       (apply #'string (reverse path))
-       'face 'aw-mode-line-face)))))
+  ;;
+  ;; Ensure all windows are labeled so the user can select a specific
+  ;; one, even if it would be ignored when not individually selected
+  ;; by the user.
+  ;; e.g. oth
+  (let ((aw-ignore-on)
+	(aw-ignore-current))
+    (avy-traverse
+     (avy-tree (aw-window-list) aw-keys)
+     (lambda (path leaf)
+       (set-window-parameter
+	leaf 'ace-window-path
+	(propertize
+	 (apply #'string (reverse path))
+	 'face 'aw-mode-line-face))))))
 
 (provide 'ace-window)
 
