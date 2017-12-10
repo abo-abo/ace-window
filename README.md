@@ -33,6 +33,12 @@ a specific window.  Note that, unlike `ace-jump-mode`, the position of
 point will not be changed, i.e. the same behavior as that of
 `other-window`.
 
+A special character defined by `aw-make-frame-char` (default = `z`)
+means create a new frame and use its window as the target.  The new
+frame's location is set relative to the prior selected frame's location
+and given by `aw-frame-offset`.  The new frame's size is given by
+`aw-frame-size`.  See their documentation strings for more information.
+
 The windows are ordered top-down, left-to-right. This means that if you
 remember your window layouts, you can switch windows without even
 looking at the leading char.  For instance, the top left window will
