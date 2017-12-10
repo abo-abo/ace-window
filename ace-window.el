@@ -199,7 +199,8 @@ or
 	   ;; Ignore major-modes and buffer-names in `aw-ignored-buffers'.
 	   (or (memq (buffer-local-value 'major-mode (window-buffer window))
 		     aw-ignored-buffers)
-	       (member (buffer-name (window-buffer window)) aw-ignored-buffers)))
+               (member (buffer-name (window-buffer window))
+                       aw-ignored-buffers)))
       ;; Ignore selected window if `aw-ignore-current' is non-nil.
       (and aw-ignore-current
            (equal window (selected-window)))
@@ -498,6 +499,7 @@ selected window).
 Prefixed with two \\[universal-argument]'s, deletes the selected
 window."
   (interactive "p")
+  (setq avy-current-path "")
   (cl-case arg
     (0
      (setq aw-ignore-on
