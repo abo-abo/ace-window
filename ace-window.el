@@ -159,7 +159,13 @@ Its value is a (width . height) pair in pixels or nil for the default frame size
            (member (buffer-name (window-buffer window))
                    aw-ignored-buffers))
       (and aw-ignore-current
-           (equal window (selected-window)))))
+           (equal window (selected-window)))
+      (unless ignore-window-parameters
+        (cl-case this-command
+          (ace-select-window (window-parameter window 'no-other-window))
+          (ace-delete-window (window-parameter window 'no-delete-other-windows))
+          (ace-delete-other-windows (window-parameter
+                                     window 'no-delete-other-windows))))))
 
 (defun aw-window-list ()
   "Return the list of interesting windows."
