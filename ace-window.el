@@ -195,17 +195,22 @@ or
 ;;* Implementation
 (defun aw-ignored-p (window)
   "Return t if WINDOW should be ignored when choosing from the window list."
-  (or 
-   ;; When `ignore-window-parameters' is nil, ignore windows whose
-   ;; `no-other-window’ parameter is non-nil.
-   (and (not ignore-window-parameters)
-	(window-parameter window 'no-other-window)) 
-   ;; Ignore major-modes and buffer-names in `aw-ignored-buffers'.
-   (memq (buffer-local-value 'major-mode (window-buffer window))
-	 aw-ignored-buffers)
-   (member (buffer-name (window-buffer window)) aw-ignored-buffers)
-   ;; Ignore selected window if `aw-ignore-current' is non-nil.
-   (and aw-ignore-current (equal window (selected-window)))))
+  (or (and aw-ignore-on
+	   ;; Ignore major-modes and buffer-names in `aw-ignored-buffers'.
+	   (or (memq (buffer-local-value 'major-mode (window-buffer window))
+		     aw-ignored-buffers)
+	       (member (buffer-name (window-buffer window)) aw-ignored-buffers)))
+      ;; Ignore selected window if `aw-ignore-current' is non-nil.
+      (and aw-ignore-current
+	   (equal window (selected-window)))
+      ;; When `ignore-window-parameters' is nil, ignore windows whose
+      ;; `no-other-window’ parameter or `no-delete-other-windows' is non-nil.
+      (unless ignore-window-parameters
+	(cl-case this-command
+          (ace-select-window (window-parameter window 'no-other-window))
+          (ace-delete-window (window-parameter window 'no-delete-other-windows))
+          (ace-delete-other-windows (window-parameter
+                                     window 'no-delete-other-windows))))))
 
 (defun aw-window-list ()
   "Return the list of interesting windows."
