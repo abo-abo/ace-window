@@ -385,7 +385,7 @@ pixels."
          (aw-use-frame (selected-window))
          (throw 'done 'exit))
         (t
-         (let ((action (aw--dispatch-action char)))
+         (let ((action (aw--dispatch-action char)))<
            (if action
                (cl-destructuring-bind (_key fn &optional description) action
                  (if (and fn description)
@@ -728,14 +728,21 @@ The point is writable, i.e. it's not part of space after newline."
 (defun aw-update (&optional _frame)
   "Update ace-window-path window parameter for all windows."
   ;; Ignored _frame argument is required when used as part of `after-make-frame-functions'.
-  (avy-traverse
-   (avy-tree (aw-window-list) aw-keys)
-   (lambda (path leaf)
-     (set-window-parameter
-      leaf 'ace-window-path
-      (propertize
-       (apply #'string (reverse path))
-       'face 'aw-mode-line-face)))))
+  ;;
+  ;; Ensure all windows are labeled so the user can select a specific
+  ;; one, even if it would be ignored when not individually selected
+  ;; by the user.
+  ;; e.g. oth
+  (let ((aw-ignore-on)
+	(aw-ignore-current))
+    (avy-traverse
+     (avy-tree (aw-window-list) aw-keys)
+     (lambda (path leaf)
+       (set-window-parameter
+	leaf 'ace-window-path
+	(propertize
+	 (apply #'string (reverse path))
+	 'face 'aw-mode-line-face))))))
 
 (provide 'ace-window)
 
