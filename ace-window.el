@@ -731,9 +731,7 @@ The point is writable, i.e. it's not part of space after newline."
   ;; Ignored _frame argument is required when used as part of `after-make-frame-functions'.
   ;;
   ;; Ensure all windows are labeled so the user can select a specific
-  ;; one, even if it would be ignored when not individually selected
-  ;; by the user.
-  ;; e.g. oth
+  ;; one, even from the set of windows ignored when making a window list.
   (let ((aw-ignore-on)
 	(aw-ignore-current))
     (avy-traverse
