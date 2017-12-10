@@ -85,7 +85,7 @@
   :type 'boolean)
 
 (defcustom aw-ignored-buffers '("*Calc Trail*" "*LV*")
-  "List of buffers to ignore when selecting window."
+  "List of buffers and major-modes to ignore when selecting a window."
   :type '(repeat string))
 
 (defcustom aw-ignore-on t
@@ -133,6 +133,42 @@ Its value is a (width . height) pair in pixels or nil for the default frame size
 (0 . 0) is special and means make the frame size the same as the last selected frame size."
   :type '(cons integer integer))
 
+;; Must be defined before `aw-make-frame-char' since its :set function references this.
+(defvar aw-dispatch-alist
+  '((?x aw-delete-window "Delete Window")
+    (?m aw-swap-window "Swap Windows")
+    (?M aw-move-window "Move Window")
+    (?j aw-switch-buffer-in-window "Select Buffer")
+    (?n aw-flip-window)
+    (?u aw-switch-buffer-other-window "Switch Buffer Other Window")
+    (?c aw-split-window-fair "Split Fair Window")
+    (?v aw-split-window-vert "Split Vert Window")
+    (?b aw-split-window-horz "Split Horz Window")
+    (?o delete-other-windows "Delete Other Windows")
+    (?? aw-show-dispatch-help))
+  "List of actions for `aw-dispatch-default'.
+Each action is a list of either:
+  (char function description) where function takes a single window argument
+or
+  (char function) where function takes no argument and the description is omitted.")
+
+(defun aw-set-make-frame-char (option value)
+  ;; Signal an error if `aw-make-frame-char' is ever set to an invalid
+  ;; or conflicting value.
+  (when value
+    (cond ((not (characterp value))
+	   (user-error "`aw-make-frame-char' must be a character, not `%s'" value))
+	  ((memq value aw-keys)
+	   (user-error "`aw-make-frame-char' is `%c'; this conflicts with the same character in `aw-keys'" value))
+	  ((assq value aw-dispatch-alist)
+	   (user-error "`aw-make-frame-char' is `%c'; this conflicts with the same character in `aw-dispatch-alist'" value))))
+  (set option value))
+
+(defcustom aw-make-frame-char ?z
+  "Non-existing ace window identifier character that triggers creation of a new single-window frame for display."
+  :set 'aw-set-make-frame-char
+  :type 'character)
+
 (defface aw-leading-char-face
   '((((class color)) (:foreground "red"))
     (((background dark)) (:foreground "gray100"))
@@ -156,8 +192,10 @@ Its value is a (width . height) pair in pixels or nil for the default frame size
 (defun aw-ignored-p (window)
   "Return t if WINDOW should be ignored."
   (or (and aw-ignore-on
-           (member (buffer-name (window-buffer window))
-                   aw-ignored-buffers))
+	   (or (memq (buffer-local-value 'major-mode (window-buffer window))
+		     aw-ignored-buffers)
+               (member (buffer-name (window-buffer window))
+                       aw-ignored-buffers)))
       (and aw-ignore-current
            (equal window (selected-window)))))
 
@@ -280,23 +318,9 @@ LEAF is (PT . WND)."
 (defun aw-set-mode-line (str)
   "Set mode line indicator to STR."
   (setq ace-window-mode str)
-  (if aw-minibuffer-flag (message "%s" str))
+  (when (and aw-minibuffer-flag ace-window-mode)
+    (message "%s" str))
   (force-mode-line-update))
-
-(defvar aw-dispatch-alist
-  '((?x aw-delete-window "Delete Window")
-    (?m aw-swap-window "Swap Windows")
-    (?M aw-move-window "Move Window")
-    (?j aw-switch-buffer-in-window "Select Buffer")
-    (?n aw-flip-window)
-    (?u aw-switch-buffer-other-window "Switch Buffer Other Window")
-    (?c aw-split-window-fair "Split Fair Window")
-    (?v aw-split-window-vert "Split Vert Window")
-    (?b aw-split-window-horz "Split Horz Window")
-    (?o delete-other-windows)
-    (?? aw-show-dispatch-help)
-    (?z aw-use-frame "Use new frame"))
-  "List of actions for `aw-dispatch-default'.")
 
 (defun aw--dispatch-action (char)
   "Return item from `aw-dispatch-alist' matching CHAR."
@@ -331,17 +355,31 @@ pixels."
 
 (defun aw-dispatch-default (char)
   "Perform an action depending on CHAR."
-  (if (= char (aref (kbd "C-g") 0))
-      (throw 'done 'exit)
-    (let ((action (aw--dispatch-action char)))
-      (cl-destructuring-bind (_key fn &optional description) action
-        (if action
-            (if (and fn description)
-                (prog1 (setq aw-action fn)
-                  (aw-set-mode-line (format " Ace - %s" description)))
-              (funcall fn)
-              (throw 'done 'exit))
-          (avy-handler-default char))))))
+  (cond ((avy-mouse-event-window char))
+	((= char (aref (kbd "C-g") 0))
+	 (throw 'done 'exit))
+        ((= char ?z)
+         (aw-use-frame (selected-window))
+         (throw 'done 'exit))
+	(t
+         (let ((action (aw--dispatch-action char)))
+	     ;; Prevent cl-destructuring-bind from triggering an error when
+	     ;; given too few arguments.
+	     (cl-destructuring-bind (_key fn &optional description) (or action '(nil nil nil))
+               (if action
+		   (if (and fn description)
+                       (prog1 (setq aw-action fn)
+			 (aw-set-mode-line (format " Ace - %s" description)))
+		     (funcall fn)
+		     (throw 'done 'exit))
+		 ;; Remove any possible ace-window command char that may
+		 ;; precede the last specified window identifier so
+		 ;; functions can use `avy-current-path' as the chosen
+		 ;; window id.
+		 (when (and (> (length avy-current-path) 0)
+			    (assq (aref avy-current-path 0) aw-dispatch-alist))
+		   (setq avy-current-path (substring avy-current-path 1)))
+		 (funcall avy-handler-function char)))))))
 
 (defun aw-select (mode-line &optional action)
   "Return a selected other window.
@@ -445,6 +483,7 @@ selected window).
 Prefixed with two \\[universal-argument]'s, deletes the selected
 window."
   (interactive "p")
+  (setq avy-current-path "")
   (cl-case arg
     (0
      (setq aw-ignore-on
@@ -528,8 +567,11 @@ Windows are numbered top down, left to right."
                              (or description fn))))
                  aw-dispatch-alist
                  "\n"))
-  (mapc #'delete-overlay aw-overlays-back)
-  (call-interactively 'ace-window))
+  ;; Prevent this from replacing any help display
+  ;; in the minibuffer.
+  (let (aw-minibuffer-flag)
+    (mapc #'delete-overlay aw-overlays-back)
+    (call-interactively 'ace-window)))
 
 (defun aw-delete-window (window)
   "Delete window WINDOW."
