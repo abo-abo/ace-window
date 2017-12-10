@@ -714,16 +714,20 @@ The point is writable, i.e. it's not part of space after newline."
               'ace-window-display-mode
               (default-value 'mode-line-format))))
         (force-mode-line-update t)
-        (add-hook 'window-configuration-change-hook 'aw-update))
+        (add-hook 'window-configuration-change-hook 'aw-update)
+	;; Add at the end so does not precede select-frame call.
+	(add-hook 'after-make-frame-functions 'aw-update t))
     (set-default
      'mode-line-format
      (assq-delete-all
       'ace-window-display-mode
       (default-value 'mode-line-format)))
-    (remove-hook 'window-configuration-change-hook 'aw-update)))
+    (remove-hook 'window-configuration-change-hook 'aw-update)
+    (remove-hook 'after-make-frame-functions 'aw-update)))
 
-(defun aw-update ()
+(defun aw-update (&optional _frame)
   "Update ace-window-path window parameter for all windows."
+  ;; Ignored _frame argument is required when used as part of `after-make-frame-functions'.
   (avy-traverse
    (avy-tree (aw-window-list) aw-keys)
    (lambda (path leaf)
