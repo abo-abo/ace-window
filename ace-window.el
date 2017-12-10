@@ -202,11 +202,11 @@ or
 	       (member (buffer-name (window-buffer window)) aw-ignored-buffers)))
       ;; Ignore selected window if `aw-ignore-current' is non-nil.
       (and aw-ignore-current
-	   (equal window (selected-window)))
+           (equal window (selected-window)))
       ;; When `ignore-window-parameters' is nil, ignore windows whose
-      ;; `no-other-window’ parameter or `no-delete-other-windows' is non-nil.
+      ;; `no-other-window’ or `no-delete-other-windows' parameter is non-nil.
       (unless ignore-window-parameters
-	(cl-case this-command
+        (cl-case this-command
           (ace-select-window (window-parameter window 'no-other-window))
           (ace-delete-window (window-parameter window 'no-delete-other-windows))
           (ace-delete-other-windows (window-parameter
@@ -371,7 +371,7 @@ pixels."
   (cond ((avy-mouse-event-window char))
 	((= char (aref (kbd "C-g") 0))
 	 (throw 'done 'exit))
-        ((= char ?z)
+        ((= char aw-make-frame-char)
          (aw-use-frame (selected-window))
          (throw 'done 'exit))
 	(t
@@ -730,9 +730,7 @@ The point is writable, i.e. it's not part of space after newline."
   ;; Ignored _frame argument is required when used as part of `after-make-frame-functions'.
   ;;
   ;; Ensure all windows are labeled so the user can select a specific
-  ;; one, even if it would be ignored when not individually selected
-  ;; by the user.
-  ;; e.g. oth
+  ;; one, even from the set of windows ignored when making a window list.
   (let ((aw-ignore-on)
 	(aw-ignore-current))
     (avy-traverse
