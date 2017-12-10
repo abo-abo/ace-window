@@ -379,7 +379,9 @@ pixels."
 		 (when (and (> (length avy-current-path) 0)
 			    (assq (aref avy-current-path 0) aw-dispatch-alist))
 		   (setq avy-current-path (substring avy-current-path 1)))
-		 (funcall avy-handler-function char)))))))
+		 ;; Prevent any char from triggering an avy dispatch command.
+		 (let ((avy-dispatch-alist))
+		   (avy-handler-default char))))))))
 
 (defun aw-select (mode-line &optional action)
   "Return a selected other window.
