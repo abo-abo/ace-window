@@ -369,32 +369,30 @@ pixels."
 (defun aw-dispatch-default (char)
   "Perform an action depending on CHAR."
   (cond ((avy-mouse-event-window char))
-	((= char (aref (kbd "C-g") 0))
-	 (throw 'done 'exit))
+        ((= char (aref (kbd "C-g") 0))
+         (throw 'done 'exit))
         ((= char aw-make-frame-char)
          (aw-use-frame (selected-window))
          (throw 'done 'exit))
-	(t
+        (t
          (let ((action (aw--dispatch-action char)))
-	     ;; Prevent cl-destructuring-bind from triggering an error when
-	     ;; given too few arguments.
-	     (cl-destructuring-bind (_key fn &optional description) (or action '(nil nil nil))
-               (if action
-		   (if (and fn description)
-                       (prog1 (setq aw-action fn)
-			 (aw-set-mode-line (format " Ace - %s" description)))
-		     (funcall fn)
-		     (throw 'done 'exit))
-		 ;; Remove any possible ace-window command char that may
-		 ;; precede the last specified window label, so
-		 ;; functions can use `avy-current-path' as the chosen
-		 ;; window label.
-		 (when (and (> (length avy-current-path) 0)
-			    (assq (aref avy-current-path 0) aw-dispatch-alist))
-		   (setq avy-current-path (substring avy-current-path 1)))
-		 ;; Prevent any char from triggering an avy dispatch command.
-		 (let ((avy-dispatch-alist))
-		   (avy-handler-default char))))))))
+           (if action
+               (cl-destructuring-bind (_key fn &optional description) action
+                 (if (and fn description)
+                     (prog1 (setq aw-action fn)
+                       (aw-set-mode-line (format " Ace - %s" description)))
+                   (funcall fn)
+                   (throw 'done 'exit)))
+             ;; Remove any possible ace-window command char that may
+             ;; precede the last specified window label, so
+             ;; functions can use `avy-current-path' as the chosen
+             ;; window label.
+             (when (and (> (length avy-current-path) 0)
+                        (assq (aref avy-current-path 0) aw-dispatch-alist))
+               (setq avy-current-path (substring avy-current-path 1)))
+             ;; Prevent any char from triggering an avy dispatch command.
+             (let ((avy-dispatch-alist))
+               (avy-handler-default char)))))))
 
 (defun aw-select (mode-line &optional action)
   "Return a selected other window.
