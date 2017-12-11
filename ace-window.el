@@ -366,6 +366,15 @@ pixels."
   (aw-switch-to-window window)
   (aw-make-frame))
 
+(defun aw-clean-up-avy-current-path ()
+  ;; Remove any possible ace-window command char that may
+  ;; precede the last specified window label, so
+  ;; functions can use `avy-current-path' as the chosen
+  ;; window label.
+  (when (and (> (length avy-current-path) 0)
+             (assq (aref avy-current-path 0) aw-dispatch-alist))
+    (setq avy-current-path (substring avy-current-path 1))))
+
 (defun aw-dispatch-default (char)
   "Perform an action depending on CHAR."
   (cond ((avy-mouse-event-window char))
@@ -383,13 +392,6 @@ pixels."
                        (aw-set-mode-line (format " Ace - %s" description)))
                    (funcall fn)
                    (throw 'done 'exit)))
-             ;; Remove any possible ace-window command char that may
-             ;; precede the last specified window label, so
-             ;; functions can use `avy-current-path' as the chosen
-             ;; window label.
-             (when (and (> (length avy-current-path) 0)
-                        (assq (aref avy-current-path 0) aw-dispatch-alist))
-               (setq avy-current-path (substring avy-current-path 1)))
              ;; Prevent any char from triggering an avy dispatch command.
              (let ((avy-dispatch-alist))
                (avy-handler-default char)))))))
