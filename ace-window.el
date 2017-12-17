@@ -199,7 +199,8 @@ or
 	   ;; Ignore major-modes and buffer-names in `aw-ignored-buffers'.
 	   (or (memq (buffer-local-value 'major-mode (window-buffer window))
 		     aw-ignored-buffers)
-	       (member (buffer-name (window-buffer window)) aw-ignored-buffers)))
+               (member (buffer-name (window-buffer window))
+                       aw-ignored-buffers)))
       ;; Ignore selected window if `aw-ignore-current' is non-nil.
       (and aw-ignore-current
            (equal window (selected-window)))
@@ -332,7 +333,7 @@ LEAF is (PT . WND)."
   "Set mode line indicator to STR."
   (setq ace-window-mode str)
   (when (and aw-minibuffer-flag ace-window-mode)
-    (message "%s" str))
+    (message "%s" (string-trim-left str)))
   (force-mode-line-update))
 
 (defun aw--dispatch-action (char)
@@ -343,30 +344,39 @@ LEAF is (PT . WND)."
   "Make a new Emacs frame using the values of `aw-frame-size' and `aw-frame-offset'."
   (make-frame
    (delq nil
-         (list (when aw-frame-size
-                 (cons 'width
-                       (if (zerop (car aw-frame-size))
-                           (frame-width)
-                         (car aw-frame-size))))
-               (when aw-frame-size
-                 (cons 'height
-                       (if (zerop (cdr aw-frame-size))
-                           (frame-height)
-                         (car aw-frame-size))))
-               (cons 'left (+ (car aw-frame-offset)
-                              (car (frame-position))))
-               (cons 'top (+ (cdr aw-frame-offset)
-                             (cdr (frame-position))))))))
+         (list
+	  ;; This first parameter is important because an
+	  ;; aw-dispatch-alist command may not want to leave this
+	  ;; frame with input focus.  If it is given focus, the
+	  ;; command may not be able to return focus to a different
+	  ;; frame since this is done asynchronously by the window
+	  ;; manager.
+	  '(no-focus-on-map . t)
+	  (when aw-frame-size
+            (cons 'width
+                  (if (zerop (car aw-frame-size))
+                      (frame-width)
+                    (car aw-frame-size))))
+          (when aw-frame-size
+            (cons 'height
+                  (if (zerop (cdr aw-frame-size))
+                      (frame-height)
+                    (car aw-frame-size))))
+          (cons 'left (+ (car aw-frame-offset)
+                         (car (frame-position))))
+          (cons 'top (+ (cdr aw-frame-offset)
+                        (cdr (frame-position))))))))
 
 (defun aw-use-frame (window)
   "Create a new frame using the contents of WINDOW.
 
-The same size as the previous frame, offset by `aw-frame-offset'
-pixels."
+The new frame is set to the same size as the previous frame, offset by
+`aw-frame-offset' (x . y) pixels."
   (aw-switch-to-window window)
   (aw-make-frame))
 
 (defun aw-clean-up-avy-current-path ()
+  "Edit `avy-current-path' so only window label characters remain."
   ;; Remove any possible ace-window command char that may
   ;; precede the last specified window label, so
   ;; functions can use `avy-current-path' as the chosen
@@ -381,7 +391,16 @@ pixels."
         ((= char (aref (kbd "C-g") 0))
          (throw 'done 'exit))
         ((= char aw-make-frame-char)
-         (aw-use-frame (selected-window))
+	 ;; Make a new frame and perform any action on its window.
+	 (let ((start-win (selected-window))
+	       (end-win (frame-selected-window (aw-make-frame))))
+	   (if aw-action
+	       ;; Action must be called from the start-win.  The action
+	       ;; determines which window to leave selected.
+	       (progn (select-frame-set-input-focus (window-frame start-win))
+		      (funcall aw-action end-win))
+	     ;; Select end-win when no action
+	     (aw-switch-to-window end-win)))
          (throw 'done 'exit))
         (t
          (let ((action (aw--dispatch-action char)))
@@ -392,6 +411,7 @@ pixels."
                        (aw-set-mode-line (format " Ace - %s" description)))
                    (funcall fn)
                    (throw 'done 'exit)))
+	     (aw-clean-up-avy-current-path)
              ;; Prevent any char from triggering an avy dispatch command.
              (let ((avy-dispatch-alist))
                (avy-handler-default char)))))))
@@ -498,6 +518,7 @@ selected window).
 Prefixed with two \\[universal-argument]'s, deletes the selected
 window."
   (interactive "p")
+  (setq avy-current-path "")
   (cl-case arg
     (0
      (setq aw-ignore-on
@@ -712,24 +733,35 @@ The point is writable, i.e. it's not part of space after newline."
               'ace-window-display-mode
               (default-value 'mode-line-format))))
         (force-mode-line-update t)
-        (add-hook 'window-configuration-change-hook 'aw-update))
+        (add-hook 'window-configuration-change-hook 'aw-update)
+	;; Add at the end so does not precede select-frame call.
+	(add-hook 'after-make-frame-functions 'aw-update t))
     (set-default
      'mode-line-format
      (assq-delete-all
       'ace-window-display-mode
       (default-value 'mode-line-format)))
-    (remove-hook 'window-configuration-change-hook 'aw-update)))
+    (remove-hook 'window-configuration-change-hook 'aw-update)
+    (remove-hook 'after-make-frame-functions 'aw-update)))
 
-(defun aw-update ()
+(defun aw-update (&optional _frame)
   "Update ace-window-path window parameter for all windows."
-  (avy-traverse
-   (avy-tree (aw-window-list) aw-keys)
-   (lambda (path leaf)
-     (set-window-parameter
-      leaf 'ace-window-path
-      (propertize
-       (apply #'string (reverse path))
-       'face 'aw-mode-line-face)))))
+  ;; Ignored _frame argument is required when used as part of `after-make-frame-functions'.
+  ;;
+  ;; Ensure all windows are labeled so the user can select a specific
+  ;; one, even from the set of windows typically ignored when making a
+  ;; window list.
+  (let ((aw-ignore-on)
+	(aw-ignore-current)
+	(ignore-window-parameters t))
+    (avy-traverse
+     (avy-tree (aw-window-list) aw-keys)
+     (lambda (path leaf)
+       (set-window-parameter
+	leaf 'ace-window-path
+	(propertize
+	 (apply #'string (reverse path))
+	 'face 'aw-mode-line-face))))))
 
 (provide 'ace-window)
 
