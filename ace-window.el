@@ -64,6 +64,7 @@
 ;;; Code:
 (require 'avy)
 (require 'ring)
+(require 'subr-x)
 
 ;;* Customization
 (defgroup ace-window nil
