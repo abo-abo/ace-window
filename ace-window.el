@@ -387,7 +387,8 @@ The new frame is set to the same size as the previous frame, offset by
 
 (defun aw-dispatch-default (char)
   "Perform an action depending on CHAR."
-  (cond ((avy-mouse-event-window char))
+  (cond ((and (fboundp 'avy-mouse-event-window)
+              (avy-mouse-event-window char)))
         ((= char (aref (kbd "C-g") 0))
          (throw 'done 'exit))
         ((= char aw-make-frame-char)
