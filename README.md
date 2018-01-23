@@ -19,8 +19,8 @@ and pack it into a single key binding, similar to `other-window`.
 ## Setup
 
 Just assign `ace-window` to a short key binding, as switching windows
-is a common task.  I suggest <kbd>M-p</kbd>, as it's short and not
-bound in the default Emacs.
+is a common task.  I suggest <kbd>M-o</kbd>, as it's short and not
+bound to anything important in the default Emacs.
 
 ## Usage
 
@@ -77,7 +77,7 @@ have `aw-dispatch-always` set to `t`.
 ## Customization
 Aside from binding `ace-window`:
 
-    (global-set-key (kbd "M-p") 'ace-window)
+    (global-set-key (kbd "M-o") 'ace-window)
 
 the following customizations are available:
 
@@ -161,4 +161,3 @@ When t, `ace-window` will ignore buffers and major-modes in
 ### `aw-ignore-current`
 
 When t, `ace-window` will ignore `selected-window'.
-

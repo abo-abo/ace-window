@@ -35,9 +35,9 @@
 ;;
 ;; To setup this package, just add to your .emacs:
 ;;
-;;    (global-set-key (kbd "M-p") 'ace-window)
+;;    (global-set-key (kbd "M-o") 'ace-window)
 ;;
-;; replacing "M-p"  with an appropriate shortcut.
+;; replacing "M-o"  with an appropriate shortcut.
 ;;
 ;; By default, ace-window uses numbers for window labels so the window
 ;; labeling is intuitively ordered.  But if you prefer to type keys on
