@@ -138,6 +138,13 @@ Its value is a (width . height) pair in pixels or nil for the default frame size
 (0 . 0) is special and means make the frame size the same as the last selected frame size."
   :type '(cons integer integer))
 
+(defcustom aw-char-position 'top-left
+  "Window positions of the character overlay.
+Consider changing this if the overlay tends to overlap with other things."
+  :type '(choice
+          (const :tag "top left corner only" 'top-left)
+          (const :tag "both left corners" 'left)))
+
 ;; Must be defined before `aw-make-frame-char' since its :set function references this.
 (defvar aw-dispatch-alist
   '((?x aw-delete-window "Delete Window")
@@ -264,6 +271,35 @@ Modify them back eventually.")
           (delete-region (point-min) (point-max))))))
   (setq aw-empty-buffers-list nil))
 
+(defun aw--overlay-str (wnd pos path)
+  "Return the replacement text for an overlay in WND at POS,
+accessible by typing PATH."
+  (let ((old-str (or
+                  (ignore-errors
+                    (with-selected-window wnd
+                      (buffer-substring pos (1+ pos))))
+                  "")))
+    (concat
+     (cl-case aw-leading-char-style
+       (char
+        (string (avy--key-to-char (car (last path)))))
+       (path
+        (mapconcat
+         (lambda (x) (string (avy--key-to-char x)))
+         (reverse path)
+         ""))
+       (t
+        (error "Bad `aw-leading-char-style': %S"
+               aw-leading-char-style)))
+     (cond ((string-equal old-str "\t")
+            (make-string (1- tab-width) ?\ ))
+           ((string-equal old-str "\n")
+            "\n")
+           (t
+            (make-string
+             (max 0 (1- (string-width old-str)))
+             ?\ ))))))
+
 (defun aw--lead-overlay (path leaf)
   "Create an overlay using PATH at LEAF.
 LEAF is (PT . WND)."
@@ -273,38 +309,30 @@ LEAF is (PT . WND)."
         (push (current-buffer) aw-empty-buffers-list)
         (let ((inhibit-read-only t))
           (insert " ")))
+
       (let* ((pt (car leaf))
-             (ol (make-overlay pt (1+ pt) (window-buffer wnd)))
-             (old-str (or
-                       (ignore-errors
-                         (with-selected-window wnd
-                           (buffer-substring pt (1+ pt))))
-                       ""))
-             (new-str
-              (concat
-               (cl-case aw-leading-char-style
-                 (char
-                  (string (avy--key-to-char (car (last path)))))
-                 (path
-                  (mapconcat
-                   (lambda (x) (string (avy--key-to-char x)))
-                   (reverse path)
-                   ""))
-                 (t
-                  (error "Bad `aw-leading-char-style': %S"
-                         aw-leading-char-style)))
-               (cond ((string-equal old-str "\t")
-                      (make-string (1- tab-width) ?\ ))
-                     ((string-equal old-str "\n")
-                      "\n")
-                     (t
-                      (make-string
-                       (max 0 (1- (string-width old-str)))
-                       ?\ ))))))
+             (ol (make-overlay pt (1+ pt) (window-buffer wnd))))
+        (overlay-put ol 'display (aw--overlay-str wnd pt path))
         (overlay-put ol 'face 'aw-leading-char-face)
         (overlay-put ol 'window wnd)
-        (overlay-put ol 'display new-str)
-        (push ol avy--overlays-lead)))))
+        (push ol avy--overlays-lead))
+
+      (when (eq aw-char-position 'left)
+        (let* ((pt
+                (save-excursion
+                  ;; Move to the start of the last visible line in the buffer.
+                  (move-to-window-line -1)
+                  (move-beginning-of-line nil)
+                  ;; If this line is empty, use the previous line so we
+                  ;; have space for the overlay.
+                  (when (equal (point) (point-max))
+                    (previous-line))
+                  (point)))
+               (ol (make-overlay pt (1+ pt) (window-buffer wnd))))
+          (overlay-put ol 'display (aw--overlay-str wnd pt path))
+          (overlay-put ol 'face 'aw-leading-char-face)
+          (overlay-put ol 'window wnd)
+          (push ol avy--overlays-lead))))))
 
 (defun aw--make-backgrounds (wnd-list)
   "Create a dim background overlay for each window on WND-LIST."
