@@ -326,7 +326,7 @@ LEAF is (PT . WND)."
                   ;; If this line is empty, use the previous line so we
                   ;; have space for the overlay.
                   (when (equal (point) (point-max))
-                    (previous-line))
+                    (forward-line -1))
                   (point)))
                (ol (make-overlay pt (1+ pt) (window-buffer wnd))))
           (overlay-put ol 'display (aw--overlay-str wnd pt path))
