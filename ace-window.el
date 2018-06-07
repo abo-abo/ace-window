@@ -557,6 +557,11 @@ window."
     (t (ace-select-window))))
 
 ;;* Utility
+(unless (fboundp 'frame-position)
+  (defun frame-position (&optional frame)
+    (cons (frame-parameter frame 'left)
+          (frame-parameter frame 'top))))
+
 (defun aw-window< (wnd1 wnd2)
   "Return true if WND1 is less than WND2.
 This is determined by their respective window coordinates.
@@ -565,8 +570,9 @@ Windows are numbered top down, left to right."
         (f2 (window-frame wnd2))
         (e1 (window-edges wnd1))
         (e2 (window-edges wnd2)))
-    (cond ((string< (frame-parameter f1 'window-id)
-                    (frame-parameter f2 'window-id))
+    (cond ((< (car (frame-position f1)) (car (frame-position f2)))
+           (not aw-reverse-frame-list))
+          ((> (car (frame-position f1)) (car (frame-position f2)))
            aw-reverse-frame-list)
           ((< (car e1) (car e2))
            t)
