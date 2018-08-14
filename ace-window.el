@@ -559,8 +559,13 @@ window."
 ;;* Utility
 (unless (fboundp 'frame-position)
   (defun frame-position (&optional frame)
-    (cons (frame-parameter frame 'left)
-          (frame-parameter frame 'top))))
+    (let ((pl (frame-parameter frame 'left))
+          (pt (frame-parameter frame 'top)))
+      (when (consp pl)
+        (setq pl (eval pl)))
+      (when (consp pt)
+        (setq pt (eval pt)))
+      (cons pl pt))))
 
 (defun aw-window< (wnd1 wnd2)
   "Return true if WND1 is less than WND2.
