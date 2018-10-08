@@ -83,6 +83,15 @@
           (const :tag "global" global)
           (const :tag "frame" frame)))
 
+(defcustom aw-translate-char-function #'identity
+  "Function to translate user input key into another key.
+For example, to make SPC do the same as ?a, use
+\(lambda (c) (if (= c 32) ?a c))."
+  :type '(choice
+          (const :tag "Off" #'identity)
+          (const :tag "Ignore Case" #'downcase)
+          (function :tag "Custom")))
+
 (defcustom aw-minibuffer-flag nil
   "When non-nil, also display `ace-window-mode' string in the minibuffer when ace-window is active."
   :type 'boolean)
@@ -487,7 +496,7 @@ Amend MODE-LINE to the mode line for the duration of the selection."
                    (remove-hook 'post-command-hook 'helm--maybe-update-keymap)
                    (unwind-protect
                         (let* ((avy-handler-function aw-dispatch-function)
-                               (avy-translate-char-function #'identity)
+                               (avy-translate-char-function aw-translate-char-function)
                                (res (avy-read (avy-tree candidate-list aw-keys)
                                               #'aw--lead-overlay
                                               #'avy--remove-leading-chars)))
