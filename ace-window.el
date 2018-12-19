@@ -96,7 +96,7 @@ For example, to make SPC do the same as ?a, use
   "When non-nil, also display `ace-window-mode' string in the minibuffer when ace-window is active."
   :type 'boolean)
 
-(defcustom aw-ignored-buffers '("*Calc Trail*" "*LV*")
+(defcustom aw-ignored-buffers '("*Calc Trail*" " *LV*")
   "List of buffers and major-modes to ignore when choosing a window from the window list.
 Active only when `aw-ignore-on' is non-nil.  Windows displaying these
 buffers can still be chosen by typing their specific labels."
