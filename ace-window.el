@@ -98,8 +98,7 @@ For example, to make SPC do the same as ?a, use
 
 (defcustom aw-ignored-buffers '("*Calc Trail*" " *LV*")
   "List of buffers and major-modes to ignore when choosing a window from the window list.
-Active only when `aw-ignore-on' is non-nil.  Windows displaying these
-buffers can still be chosen by typing their specific labels."
+Active only when `aw-ignore-on' is non-nil."
   :type '(repeat string))
 
 (defcustom aw-ignore-on t
