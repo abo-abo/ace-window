@@ -217,7 +217,7 @@ or
                      aw-ignored-buffers)
                (member (buffer-name (window-buffer window)) aw-ignored-buffers)))
       ;; ignore child frames
-      (frame-parent (window-frame window))
+      (and (fboundp 'frame-parent) (frame-parent (window-frame window)))
       ;; Ignore selected window if `aw-ignore-current' is non-nil.
       (and aw-ignore-current
            (equal window (selected-window)))
