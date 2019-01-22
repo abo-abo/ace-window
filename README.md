@@ -1,5 +1,8 @@
 # ace-window
 
+[![MELPA](https://melpa.org/packages/ace-window-badge.svg)](https://melpa.org/#/ace-window)
+[![MELPA Stable](https://stable.melpa.org/packages/ace-window-badge.svg)](https://stable.melpa.org/#/ace-window)
+
 **GNU Emacs package for selecting a window to switch to**
 
 ## What and why
