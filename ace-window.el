@@ -751,6 +751,16 @@ Modify `aw-fair-aspect-ratio' to tweak behavior."
   (aw--switch-buffer)
   (aw-flip-window))
 
+(defun aw--face-rel-height ()
+  (let ((h (face-attribute 'aw-leading-char-face :height)))
+    (cond
+      ((eq h 'unspecified)
+       1)
+      ((floatp h)
+       (1+ (floor h)))
+      (t
+       (error "unexpected: %s" h)))))
+
 (defun aw-offset (window)
   "Return point in WINDOW that's closest to top left corner.
 The point is writable, i.e. it's not part of space after newline."
@@ -758,10 +768,11 @@ The point is writable, i.e. it's not part of space after newline."
         (beg (window-start window))
         (end (window-end window))
         (inhibit-field-text-motion t))
-    (with-current-buffer
-        (window-buffer window)
+    (with-current-buffer (window-buffer window)
       (save-excursion
         (goto-char beg)
+        (when (member major-mode '(shell-mode))
+          (forward-line (- (aw--face-rel-height) 1)))
         (while (and (< (point) end)
                     (< (- (line-end-position)
                           (line-beginning-position))
