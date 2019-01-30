@@ -779,6 +779,10 @@ The point is writable, i.e. it's not part of space after newline."
           (forward-line))
         (+ (point) h)))))
 
+(defun aw--after-make-frame (f)
+  (aw-update)
+  (make-frame-visible f))
+
 ;;* Mode line
 ;;;###autoload
 (define-minor-mode ace-window-display-mode
@@ -797,14 +801,14 @@ The point is writable, i.e. it's not part of space after newline."
         (force-mode-line-update t)
         (add-hook 'window-configuration-change-hook 'aw-update)
         ;; Add at the end so does not precede select-frame call.
-        (add-hook 'after-make-frame-functions (lambda (_) (aw-update)) t))
+        (add-hook 'after-make-frame-functions #'aw--after-make-frame t))
     (set-default
      'mode-line-format
      (assq-delete-all
       'ace-window-display-mode
       (default-value 'mode-line-format)))
     (remove-hook 'window-configuration-change-hook 'aw-update)
-    (remove-hook 'after-make-frame-functions 'aw-update)))
+    (remove-hook 'after-make-frame-functions 'aw--after-make-frame)))
 
 (defun aw-update ()
   "Update ace-window-path window parameter for all windows.
