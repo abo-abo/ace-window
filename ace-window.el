@@ -660,8 +660,9 @@ Windows are numbered top down, left to right."
     (mapc #'delete-overlay aw-overlays-back)
     (call-interactively 'ace-window)))
 
-(defun aw-delete-window (window)
-  "Delete window WINDOW."
+(defun aw-delete-window (window &optional kill-buffer)
+  "Delete window WINDOW.
+When KILL-BUFFER is non-nil, also kill the buffer."
   (let ((frame (window-frame window)))
     (when (and (frame-live-p frame)
                (not (eq frame (selected-frame))))
@@ -669,7 +670,10 @@ Windows are numbered top down, left to right."
     (if (= 1 (length (window-list)))
         (delete-frame frame)
       (if (window-live-p window)
-          (delete-window window)
+          (let ((buffer (window-buffer window)))
+            (delete-window window)
+            (when kill-buffer
+              (kill-buffer buffer)))
         (error "Got a dead window %S" window)))))
 
 (defun aw-switch-buffer-in-window (window)
