@@ -158,10 +158,11 @@ Consider changing this if the overlay tends to overlap with other things."
   '((?x aw-delete-window "Delete Window")
     (?m aw-swap-window "Swap Windows")
     (?M aw-move-window "Move Window")
+    (?c aw-copy-window "Copy Window")
     (?j aw-switch-buffer-in-window "Select Buffer")
     (?n aw-flip-window)
     (?u aw-switch-buffer-other-window "Switch Buffer Other Window")
-    (?c aw-split-window-fair "Split Fair Window")
+    (?f aw-split-window-fair "Split Fair Window")
     (?v aw-split-window-vert "Split Vert Window")
     (?b aw-split-window-horz "Split Horz Window")
     (?o delete-other-windows "Delete Other Windows")
@@ -721,6 +722,12 @@ When KILL-BUFFER is non-nil, also kill the buffer."
 Switch the current window to the previous buffer."
   (let ((buffer (current-buffer)))
     (switch-to-buffer (other-buffer))
+    (aw-switch-to-window window)
+    (switch-to-buffer buffer)))
+
+(defun aw-copy-window (window)
+  "Copy the current buffer to WINDOW."
+  (let ((buffer (current-buffer)))
     (aw-switch-to-window window)
     (switch-to-buffer buffer)))
 
