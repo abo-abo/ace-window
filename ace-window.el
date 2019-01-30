@@ -771,8 +771,7 @@ The point is writable, i.e. it's not part of space after newline."
     (with-current-buffer (window-buffer window)
       (save-excursion
         (goto-char beg)
-        (when (member major-mode '(shell-mode))
-          (forward-line (- (aw--face-rel-height) 1)))
+        (forward-line (- (aw--face-rel-height) 1))
         (while (and (< (point) end)
                     (< (- (line-end-position)
                           (line-beginning-position))
