@@ -762,6 +762,8 @@ Modify `aw-fair-aspect-ratio' to tweak behavior."
        1)
       ((floatp h)
        (1+ (floor h)))
+      ((integerp h)
+       1)
       (t
        (error "unexpected: %s" h)))))
 
