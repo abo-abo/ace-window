@@ -493,7 +493,8 @@ Amend MODE-LINE to the mode line for the duration of the selection."
                  (let ((candidate-list
                         (mapcar (lambda (wnd)
                                   (cons (aw-offset wnd) wnd))
-                                wnd-list)))
+                                wnd-list))
+                       (cursor-in-non-selected-windows nil))
                    (aw--make-backgrounds wnd-list)
                    (aw-set-mode-line mode-line)
                    ;; turn off helm transient map
