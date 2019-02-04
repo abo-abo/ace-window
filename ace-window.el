@@ -162,6 +162,7 @@ Consider changing this if the overlay tends to overlap with other things."
     (?j aw-switch-buffer-in-window "Select Buffer")
     (?n aw-flip-window)
     (?u aw-switch-buffer-other-window "Switch Buffer Other Window")
+    (?e aw-execute-command-other-window "Execute Command Other Window")
     (?F aw-split-window-fair "Split Fair Window")
     (?v aw-split-window-vert "Split Vert Window")
     (?b aw-split-window-horz "Split Horz Window")
@@ -761,6 +762,16 @@ Modify `aw-fair-aspect-ratio' to tweak behavior."
   (aw-switch-to-window window)
   (unwind-protect
       (aw--switch-buffer)
+    (aw-flip-window)))
+
+(defun aw-execute-command-other-window (window)
+  "Exectute a command in WINDOW."
+  (aw-switch-to-window window)
+  (unwind-protect
+      (funcall
+       (key-binding
+        (read-key-sequence
+         "Enter key sequence: ")))
     (aw-flip-window)))
 
 (defun aw--face-rel-height ()
