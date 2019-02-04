@@ -216,7 +216,9 @@ or
            ;; Ignore major-modes and buffer-names in `aw-ignored-buffers'.
            (or (memq (buffer-local-value 'major-mode (window-buffer window))
                      aw-ignored-buffers)
-               (member (buffer-name (window-buffer window)) aw-ignored-buffers)))
+               (member (buffer-name (window-buffer window)) aw-ignored-buffers))
+           (or aw-ignore-current
+               (not (equal window (selected-window)))))
       ;; ignore child frames
       (and (fboundp 'frame-parent) (frame-parent (window-frame window)))
       ;; Ignore selected window if `aw-ignore-current' is non-nil.
