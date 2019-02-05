@@ -562,9 +562,8 @@ window."
   (interactive "p")
   (cl-case arg
     (0
-     (setq aw-ignore-on
-           (not aw-ignore-on))
-     (ace-select-window))
+     (let ((aw-ignore-on (not aw-ignore-on)))
+       (ace-select-window)))
     (4 (ace-swap-window))
     (16 (ace-delete-window))
     (t (ace-select-window))))
