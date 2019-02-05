@@ -216,9 +216,7 @@ or
            ;; Ignore major-modes and buffer-names in `aw-ignored-buffers'.
            (or (memq (buffer-local-value 'major-mode (window-buffer window))
                      aw-ignored-buffers)
-               (member (buffer-name (window-buffer window)) aw-ignored-buffers))
-           (or aw-ignore-current
-               (not (equal window (selected-window)))))
+               (member (buffer-name (window-buffer window)) aw-ignored-buffers)))
       ;; ignore child frames
       (and (fboundp 'frame-parent) (frame-parent (window-frame window)))
       ;; Ignore selected window if `aw-ignore-current' is non-nil.
@@ -480,7 +478,8 @@ Amend MODE-LINE to the mode line for the duration of the selection."
                    (when (eq aw-action 'exit)
                      (setq aw-action nil)))
                  (or (car wnd-list) start-window))
-                ((and (<= (length wnd-list) aw-dispatch-when-more-than)
+                ((and (<= (+ (length wnd-list) (if (aw-ignored-p start-window) 1 0))
+                          aw-dispatch-when-more-than)
                       (not aw-dispatch-always)
                       (not aw-ignore-current))
                  (let ((wnd (next-window nil nil next-window-scope)))
