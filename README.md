@@ -64,6 +64,7 @@ You can also start by calling `ace-window` and then decide to switch the action 
 - <kbd>x</kbd> - delete window
 - <kbd>m</kbd> - swap windows
 - <kbd>M</kbd> - move window
+- <kbd>c</kbd> - copy window
 - <kbd>j</kbd> - select buffer
 - <kbd>n</kbd> - select the previous window
 - <kbd>u</kbd> - select buffer in the other window
@@ -127,6 +128,7 @@ This is the list of actions you can trigger from `ace-window` other than the
 	  '((?x aw-delete-window "Delete Window")
 		(?m aw-swap-window "Swap Windows")
 		(?M aw-move-window "Move Window")
+		(?c aw-copy-window "Copy Window")
 		(?j aw-switch-buffer-in-window "Select Buffer")
 		(?n aw-flip-window)
 		(?u aw-switch-buffer-other-window "Switch Buffer Other Window")
