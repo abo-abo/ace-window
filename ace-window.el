@@ -765,7 +765,7 @@ Modify `aw-fair-aspect-ratio' to tweak behavior."
     (aw-flip-window)))
 
 (defun aw-execute-command-other-window (window)
-  "Exectute a command in WINDOW."
+  "Execute a command in WINDOW."
   (aw-switch-to-window window)
   (unwind-protect
       (funcall
