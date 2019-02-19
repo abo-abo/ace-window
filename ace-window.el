@@ -315,36 +315,40 @@ accessible by typing PATH."
 (defun aw--lead-overlay (path leaf)
   "Create an overlay using PATH at LEAF.
 LEAF is (PT . WND)."
+  ;; Properly adds overlay in visible region of most windows except for any one
+  ;; receiving output while this function is executing, since that moves point,
+  ;; potentially shifting the added overlay outside the window's visible region.
   (let ((wnd (cdr leaf)))
     (with-selected-window wnd
       (when (= 0 (buffer-size))
         (push (current-buffer) aw-empty-buffers-list)
         (let ((inhibit-read-only t))
           (insert " ")))
-
-      (let* ((pt (car leaf))
+      (let* ((prev)
+             (vertical-pos (if (eq aw-char-position 'left) -1 0))
+             (horizontal-pos (if (zerop (window-hscroll)) 0 (1+ (window-hscroll))))
+             (pt
+              (save-excursion
+                ;; If leading-char is to be displayed at the top-left, move
+                ;; to the first visible line in the window, otherwise, move
+                ;; to the last visible line.
+                (move-to-window-line vertical-pos)
+                (move-to-column horizontal-pos)
+                ;; Find a nearby point that is not at the end-of-line but
+                ;; is visible so have space for the overlay.
+                (setq prev (1- (point)))
+                (while (and (/= prev (point)) (eolp))
+                  (setq prev (point))
+                  (unless (bobp)
+                    (line-move -1 nil)
+                    (move-to-column horizontal-pos)))
+                (recenter vertical-pos)
+                (point)))
              (ol (make-overlay pt (1+ pt) (window-buffer wnd))))
         (overlay-put ol 'display (aw--overlay-str wnd pt path))
         (overlay-put ol 'face 'aw-leading-char-face)
         (overlay-put ol 'window wnd)
-        (push ol avy--overlays-lead))
-
-      (when (eq aw-char-position 'left)
-        (let* ((pt
-                (save-excursion
-                  ;; Move to the start of the last visible line in the buffer.
-                  (move-to-window-line -1)
-                  (move-beginning-of-line nil)
-                  ;; If this line is empty, use the previous line so we
-                  ;; have space for the overlay.
-                  (when (equal (point) (point-max))
-                    (forward-line -1))
-                  (point)))
-               (ol (make-overlay pt (1+ pt) (window-buffer wnd))))
-          (overlay-put ol 'display (aw--overlay-str wnd pt path))
-          (overlay-put ol 'face 'aw-leading-char-face)
-          (overlay-put ol 'window wnd)
-          (push ol avy--overlays-lead))))))
+        (push ol avy--overlays-lead)))))
 
 (defun aw--make-backgrounds (wnd-list)
   "Create a dim background overlay for each window on WND-LIST."
