@@ -318,7 +318,9 @@ LEAF is (PT . WND)."
   ;; Properly adds overlay in visible region of most windows except for any one
   ;; receiving output while this function is executing, since that moves point,
   ;; potentially shifting the added overlay outside the window's visible region.
-  (let ((wnd (cdr leaf)))
+  (let ((wnd (cdr leaf))
+        ;; Prevent temporary movement of point from scrolling any window.
+        (scroll-margin 0))
     (with-selected-window wnd
       (when (= 0 (buffer-size))
         (push (current-buffer) aw-empty-buffers-list)
