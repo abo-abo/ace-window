@@ -1,5 +1,8 @@
 # ace-window
 
+[![MELPA](https://melpa.org/packages/ace-window-badge.svg)](https://melpa.org/#/ace-window)
+[![MELPA Stable](https://stable.melpa.org/packages/ace-window-badge.svg)](https://stable.melpa.org/#/ace-window)
+
 **GNU Emacs package for selecting a window to switch to**
 
 ## What and why
@@ -19,8 +22,8 @@ and pack it into a single key binding, similar to `other-window`.
 ## Setup
 
 Just assign `ace-window` to a short key binding, as switching windows
-is a common task.  I suggest <kbd>M-p</kbd>, as it's short and not
-bound in the default Emacs.
+is a common task.  I suggest <kbd>M-o</kbd>, as it's short and not
+bound to anything important in the default Emacs.
 
 ## Usage
 
@@ -61,6 +64,7 @@ You can also start by calling `ace-window` and then decide to switch the action 
 - <kbd>x</kbd> - delete window
 - <kbd>m</kbd> - swap windows
 - <kbd>M</kbd> - move window
+- <kbd>c</kbd> - copy window
 - <kbd>j</kbd> - select buffer
 - <kbd>n</kbd> - select the previous window
 - <kbd>u</kbd> - select buffer in the other window
@@ -77,7 +81,7 @@ have `aw-dispatch-always` set to `t`.
 ## Customization
 Aside from binding `ace-window`:
 
-    (global-set-key (kbd "M-p") 'ace-window)
+    (global-set-key (kbd "M-o") 'ace-window)
 
 the following customizations are available:
 
@@ -124,6 +128,7 @@ This is the list of actions you can trigger from `ace-window` other than the
 	  '((?x aw-delete-window "Delete Window")
 		(?m aw-swap-window "Swap Windows")
 		(?M aw-move-window "Move Window")
+		(?c aw-copy-window "Copy Window")
 		(?j aw-switch-buffer-in-window "Select Buffer")
 		(?n aw-flip-window)
 		(?u aw-switch-buffer-other-window "Switch Buffer Other Window")
@@ -161,4 +166,3 @@ When t, `ace-window` will ignore buffers and major-modes in
 ### `aw-ignore-current`
 
 When t, `ace-window` will ignore `selected-window'.
-
