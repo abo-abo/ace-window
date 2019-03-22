@@ -268,6 +268,10 @@ or
   "Store the read-only empty buffers which had to be modified.
 Modify them back eventually.")
 
+(defvar aw--windows-hscroll nil
+  "List of (window . hscroll-columns) items, each listing a window whose
+  horizontal scroll will be restored upon ace-window action completion.")
+
 (defun aw--done ()
   "Clean up mode line and overlays."
   ;; mode line
@@ -281,7 +285,19 @@ Modify them back eventually.")
       (when (string= (buffer-string) " ")
         (let ((inhibit-read-only t))
           (delete-region (point-min) (point-max))))))
+  (aw--restore-windows-hscroll)
   (setq aw-empty-buffers-list nil))
+
+(defun aw--restore-windows-hscroll ()
+  "Restore horizontal scroll of windows from `aw--windows-hscroll' list."
+  (let (win hscroll)
+    (mapc (lambda (wnd-and-hscroll)
+	    (setq wnd (car wnd-and-hscroll)
+		  hscroll (cdr wnd-and-hscroll))
+	    (when (window-live-p wnd)
+	      (set-window-hscroll wnd hscroll)))
+	  aw--windows-hscroll))
+  (setq aw--windows-hscroll nil))
 
 (defun aw--overlay-str (wnd pos path)
   "Return the replacement text for an overlay in WND at POS,
@@ -312,6 +328,12 @@ accessible by typing PATH."
              (max 0 (1- (string-width old-str)))
              ?\ ))))))
 
+(defun aw--point-visible-p ()
+  "Return non-nil if point is visible in the selected window, else nil when horizontal scrolling has moved it off screen."
+  (and (>= (- (current-column) (window-hscroll)) 0)
+       (< (- (current-column) (window-hscroll))
+          (window-width))))
+
 (defun aw--lead-overlay (path leaf)
   "Create an overlay using PATH at LEAF.
 LEAF is (PT . WND)."
@@ -320,12 +342,21 @@ LEAF is (PT . WND)."
   ;; potentially shifting the added overlay outside the window's visible region.
   (let ((wnd (cdr leaf))
         ;; Prevent temporary movement of point from scrolling any window.
-        (scroll-margin 0))
+	(scroll-margin 0))
     (with-selected-window wnd
       (when (= 0 (buffer-size))
         (push (current-buffer) aw-empty-buffers-list)
         (let ((inhibit-read-only t))
           (insert " ")))
+      ;; If point is not visible due to horizontal scrolling of the
+      ;; window, this next expression temporarily scrolls the window
+      ;; right until point is visible, so that the leading-char can be
+      ;; seen when it is inserted.  When ace-window's action finishes,
+      ;; the horizontal scroll is restored by (aw--done).
+      (while (and (not (aw--point-visible-p))
+		  (not (zerop (window-hscroll)))
+		  (progn (push (cons (selected-window) (window-hscroll)) aw--windows-hscroll) t)
+                  (not (zerop (scroll-right)))))
       (let* ((prev)
              (vertical-pos (if (eq aw-char-position 'left) -1 0))
              (horizontal-pos (if (zerop (window-hscroll)) 0 (1+ (window-hscroll))))
@@ -342,7 +373,7 @@ LEAF is (PT . WND)."
                 (while (and (/= prev (point)) (eolp))
                   (setq prev (point))
                   (unless (bobp)
-                    (line-move -1 nil)
+                    (line-move -1 t)
                     (move-to-column horizontal-pos)))
                 (recenter vertical-pos)
                 (point)))
