@@ -290,13 +290,13 @@ Modify them back eventually.")
 
 (defun aw--restore-windows-hscroll ()
   "Restore horizontal scroll of windows from `aw--windows-hscroll' list."
-  (let (win hscroll)
+  (let (wnd hscroll)
     (mapc (lambda (wnd-and-hscroll)
-	    (setq wnd (car wnd-and-hscroll)
-		  hscroll (cdr wnd-and-hscroll))
-	    (when (window-live-p wnd)
-	      (set-window-hscroll wnd hscroll)))
-	  aw--windows-hscroll))
+            (setq wnd (car wnd-and-hscroll)
+                  hscroll (cdr wnd-and-hscroll))
+            (when (window-live-p wnd)
+              (set-window-hscroll wnd hscroll)))
+          aw--windows-hscroll))
   (setq aw--windows-hscroll nil))
 
 (defun aw--overlay-str (wnd pos path)
@@ -342,7 +342,7 @@ LEAF is (PT . WND)."
   ;; potentially shifting the added overlay outside the window's visible region.
   (let ((wnd (cdr leaf))
         ;; Prevent temporary movement of point from scrolling any window.
-	(scroll-margin 0))
+        (scroll-margin 0))
     (with-selected-window wnd
       (when (= 0 (buffer-size))
         (push (current-buffer) aw-empty-buffers-list)
@@ -354,8 +354,8 @@ LEAF is (PT . WND)."
       ;; seen when it is inserted.  When ace-window's action finishes,
       ;; the horizontal scroll is restored by (aw--done).
       (while (and (not (aw--point-visible-p))
-		  (not (zerop (window-hscroll)))
-		  (progn (push (cons (selected-window) (window-hscroll)) aw--windows-hscroll) t)
+                  (not (zerop (window-hscroll)))
+                  (progn (push (cons (selected-window) (window-hscroll)) aw--windows-hscroll) t)
                   (not (zerop (scroll-right)))))
       (let* ((prev)
              (vertical-pos (if (eq aw-char-position 'left) -1 0))
@@ -622,12 +622,12 @@ window."
 This is determined by their respective window coordinates.
 Windows are numbered top down, left to right."
   (let* ((f1 (window-frame wnd1))
-	 (f2 (window-frame wnd2))
-	 (e1 (window-edges wnd1))
-	 (e2 (window-edges wnd2))
-	 (p1 (frame-position f1))
-	 (p2 (frame-position f2))
-	 (nl (or (null (car p1)) (null (car p2)))))
+         (f2 (window-frame wnd2))
+         (e1 (window-edges wnd1))
+         (e2 (window-edges wnd2))
+         (p1 (frame-position f1))
+         (p2 (frame-position f2))
+         (nl (or (null (car p1)) (null (car p2)))))
     (cond ((and (not nl) (< (car p1) (car p2)))
            (not aw-reverse-frame-list))
           ((and (not nl) (> (car p1) (car p2)))
