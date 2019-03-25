@@ -329,7 +329,8 @@ accessible by typing PATH."
              ?\ ))))))
 
 (defun aw--point-visible-p ()
-  "Return non-nil if point is visible in the selected window, else nil when horizontal scrolling has moved it off screen."
+  "Return non-nil if point is visible in the selected window.
+Return nil when horizontal scrolling has moved it off screen."
   (and (>= (- (current-column) (window-hscroll)) 0)
        (< (- (current-column) (window-hscroll))
           (window-width))))
