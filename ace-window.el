@@ -167,6 +167,7 @@ Consider changing this if the overlay tends to overlap with other things."
     (?v aw-split-window-vert "Split Vert Window")
     (?b aw-split-window-horz "Split Horz Window")
     (?o delete-other-windows "Delete Other Windows")
+    (?t aw-transpose-frame "Transpose Frame")
     (?? aw-show-dispatch-help))
   "List of actions for `aw-dispatch-default'.
 Each action is a list of either:
@@ -579,6 +580,10 @@ Amend MODE-LINE to the mode line for the duration of the selection."
   (interactive)
   (aw-select " Ace - Delete Other Windows"
              #'delete-other-windows))
+
+(defun aw-transpose-frame (w)
+  "Select any window on frame and `tranpose-frame'."
+  (transpose-frame (window-frame w)))
 
 (define-obsolete-function-alias
     'ace-maximize-window 'ace-delete-other-windows "0.10.0")
