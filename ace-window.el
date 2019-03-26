@@ -167,7 +167,7 @@ Consider changing this if the overlay tends to overlap with other things."
     (?v aw-split-window-vert "Split Vert Window")
     (?b aw-split-window-horz "Split Horz Window")
     (?o delete-other-windows "Delete Other Windows")
-    (?t aw-transpose-frame "Transpose Frame")
+    (?T aw-transpose-frame "Transpose Frame")
     (?? aw-show-dispatch-help))
   "List of actions for `aw-dispatch-default'.
 Each action is a list of either:
