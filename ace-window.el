@@ -592,6 +592,7 @@ Amend MODE-LINE to the mode line for the duration of the selection."
   (aw-select " Ace - Delete Other Windows"
              #'delete-other-windows))
 
+(declare-function transpose-frame "ext:transpose-frame")
 (defun aw-transpose-frame (w)
   "Select any window on frame and `tranpose-frame'."
   (transpose-frame (window-frame w)))
