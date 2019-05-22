@@ -359,7 +359,8 @@ LEAF is (PT . WND)."
                   (not (zerop (window-hscroll)))
                   (progn (push (cons (selected-window) (window-hscroll)) aw--windows-hscroll) t)
                   (not (zerop (scroll-right)))))
-      (let* ((prev)
+      (let* ((ws (window-start))
+             (prev nil)
              (vertical-pos (if (eq aw-char-position 'left) -1 0))
              (horizontal-pos (if (zerop (window-hscroll)) 0 (1+ (window-hscroll))))
              (pt
@@ -372,7 +373,7 @@ LEAF is (PT . WND)."
                 ;; Find a nearby point that is not at the end-of-line but
                 ;; is visible so have space for the overlay.
                 (setq prev (1- (point)))
-                (while (and (/= prev (point)) (eolp))
+                (while (and (>= prev ws) (/= prev (point)) (eolp))
                   (setq prev (point))
                   (unless (bobp)
                     (line-move -1 t)
