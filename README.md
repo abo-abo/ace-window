@@ -166,3 +166,10 @@ When t, `ace-window` will ignore buffers and major-modes in
 ### `aw-ignore-current`
 
 When t, `ace-window` will ignore `selected-window'.
+
+### `aw-minibuffer-separate-face`
+
+When t, `ace-window` will use a separate face
+(`aw-minibuffer-leading-char-face`) for overlays in the minibuffer.
+This is useful if you want to use a huge font size for overlays which
+doesn't fit in the minibuffer.

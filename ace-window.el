@@ -96,6 +96,10 @@ For example, to make SPC do the same as ?a, use
   "When non-nil, also display `ace-window-mode' string in the minibuffer when ace-window is active."
   :type 'boolean)
 
+(defcustom aw-minibuffer-separate-face nil
+  "When non-nil, use different face for minibuffer."
+  :type 'boolean)
+
 (defcustom aw-ignored-buffers '("*Calc Trail*" " *LV*")
   "List of buffers and major-modes to ignore when choosing a window from the window list.
 Active only when `aw-ignore-on' is non-nil."
@@ -198,6 +202,13 @@ or
     (((background light)) (:foreground "gray0"))
     (t (:foreground "gray100" :underline nil)))
   "Face for each window's leading char.")
+
+(defface aw-minibuffer-leading-char-face
+  '((((class color)) (:foreground "red"))
+    (((background dark)) (:foreground "gray100"))
+    (((background light)) (:foreground "gray0"))
+    (t (:foreground "gray100" :underline nil)))
+  "Face for minibuffer leading char.")
 
 (defface aw-background-face
   '((t (:foreground "gray40")))
@@ -396,7 +407,10 @@ LEAF is (PT . WND)."
             (goto-char (+ pt 1))
             (push (cons wnd old-pt) aw--windows-points)))
         (overlay-put ol 'display (aw--overlay-str wnd pt path))
-        (overlay-put ol 'face 'aw-leading-char-face)
+        (if (and aw-minibuffer-separate-face
+                 (window-minibuffer-p wnd))
+            (overlay-put ol 'face 'aw-minibuffer-leading-char-face)
+          (overlay-put ol 'face 'aw-leading-char-face))
         (overlay-put ol 'window wnd)
         (push ol avy--overlays-lead)))))
 
