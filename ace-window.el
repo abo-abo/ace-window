@@ -199,6 +199,10 @@ or
     (t (:foreground "gray100" :underline nil)))
   "Face for each window's leading char.")
 
+(defface aw-minibuffer-leading-char-face
+  '((t :inherit aw-leading-char-face))
+  "Face for minibuffer leading char.")
+
 (defface aw-background-face
   '((t (:foreground "gray40")))
   "Face for whole window background during selection.")
@@ -396,7 +400,9 @@ LEAF is (PT . WND)."
             (goto-char (+ pt 1))
             (push (cons wnd old-pt) aw--windows-points)))
         (overlay-put ol 'display (aw--overlay-str wnd pt path))
-        (overlay-put ol 'face 'aw-leading-char-face)
+        (if (window-minibuffer-p wnd)
+            (overlay-put ol 'face 'aw-minibuffer-leading-char-face)
+          (overlay-put ol 'face 'aw-leading-char-face))
         (overlay-put ol 'window wnd)
         (push ol avy--overlays-lead)))))
 
