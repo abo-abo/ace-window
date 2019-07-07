@@ -96,9 +96,9 @@ For example, to make SPC do the same as ?a, use
   "When non-nil, also display `ace-window-mode' string in the minibuffer when ace-window is active."
   :type 'boolean)
 
-(defcustom aw-minibuffer-separate-face nil
-  "When non-nil, use different face for minibuffer."
-  :type 'boolean)
+(defcustom aw-minibuffer-separate-face 'aw-leading-char-face
+  "Face for minibuffer overlays."
+  :type 'face)
 
 (defcustom aw-ignored-buffers '("*Calc Trail*" " *LV*")
   "List of buffers and major-modes to ignore when choosing a window from the window list.
@@ -407,9 +407,8 @@ LEAF is (PT . WND)."
             (goto-char (+ pt 1))
             (push (cons wnd old-pt) aw--windows-points)))
         (overlay-put ol 'display (aw--overlay-str wnd pt path))
-        (if (and aw-minibuffer-separate-face
-                 (window-minibuffer-p wnd))
-            (overlay-put ol 'face 'aw-minibuffer-leading-char-face)
+        (if (window-minibuffer-p wnd)
+            (overlay-put ol 'face aw-minibuffer-separate-face)
           (overlay-put ol 'face 'aw-leading-char-face))
         (overlay-put ol 'window wnd)
         (push ol avy--overlays-lead)))))

@@ -169,7 +169,8 @@ When t, `ace-window` will ignore `selected-window'.
 
 ### `aw-minibuffer-separate-face`
 
-When t, `ace-window` will use a separate face
-(`aw-minibuffer-leading-char-face`) for overlays in the minibuffer.
-This is useful if you want to use a huge font size for overlays which
-doesn't fit in the minibuffer.
+The face to use for overlays in minibuffer windows. Defaults to the
+same face as regular windows (`aw-leading-char-face`). You can also
+set it to `'aw-minibuffer-leading-char-face` or any other face you
+like. This is useful if you want to use a huge font size for overlays
+which doesn't fit in the minibuffer.
