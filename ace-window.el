@@ -627,6 +627,7 @@ Amend MODE-LINE to the mode line for the duration of the selection."
 Perform an action based on ARG described below.
 
 By default, behaves like extended `other-window'.
+See `aw-scope' which extends it to work with frames.
 
 Prefixed with one \\[universal-argument], does a swap between the
 selected window and the current window, so that the selected
