@@ -613,6 +613,22 @@ Amend MODE-LINE to the mode line for the duration of the selection."
   (aw-select " Ace - Delete Other Windows"
              #'delete-other-windows))
 
+;;;###autoload
+(defun ace-display-buffer (buffer alist)
+  "Make `display-buffer' and `pop-to-buffer' select using `ace-window'.
+See sample config for `display-buffer-base-action' and `display-buffer-alist':
+https://github.com/abo-abo/ace-window/wiki/display-buffer."
+  (let* ((aw-ignore-current (cdr (assq 'inhibit-same-window alist)))
+         (rf (cdr (assq 'reusable-frames alist)))
+         (aw-scope (cl-case rf
+                     ((nil) 'frame)
+                     (visible 'visible)
+                     ((0 t) 'global))))
+    (unless (or (<= (length (aw-window-list)) 1)
+                (not aw-scope))
+      (window--display-buffer
+       buffer (aw-select "Ace - Display Buffer") 'reuse))))
+
 (declare-function transpose-frame "ext:transpose-frame")
 (defun aw-transpose-frame (w)
   "Select any window on frame and `tranpose-frame'."
