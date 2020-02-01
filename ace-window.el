@@ -168,6 +168,7 @@ Consider changing this if the overlay tends to overlap with other things."
     (?b aw-split-window-horz "Split Horz Window")
     (?o delete-other-windows "Delete Other Windows")
     (?T aw-transpose-frame "Transpose Frame")
+    ;; ?i ?r ?t are used by hyperbole.el
     (?? aw-show-dispatch-help))
   "List of actions for `aw-dispatch-default'.
 Each action is a list of either:
