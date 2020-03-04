@@ -570,6 +570,7 @@ Amend MODE-LINE to the mode line for the duration of the selection."
                    (unwind-protect
                         (let* ((avy-handler-function aw-dispatch-function)
                                (avy-translate-char-function aw-translate-char-function)
+                               (transient-mark-mode nil)
                                (res (avy-read (avy-tree candidate-list aw-keys)
                                               (if (and ace-window-display-mode
                                                        (null aw-display-mode-overlay))
