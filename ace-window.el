@@ -420,10 +420,6 @@ LEAF is (PT . WND)."
                       ol))
                   wnd-list))))
 
-(define-obsolete-variable-alias
-    'aw-flip-keys 'aw--flip-keys "0.1.0"
-    "Use `aw-dispatch-alist' instead.")
-
 (defvar aw-dispatch-function 'aw-dispatch-default
   "Function to call when a character not in `aw-keys' is pressed.")
 
@@ -635,9 +631,6 @@ https://github.com/abo-abo/ace-window/wiki/display-buffer."
 (defun aw-transpose-frame (w)
   "Select any window on frame and `tranpose-frame'."
   (transpose-frame (window-frame w)))
-
-(define-obsolete-function-alias
-    'ace-maximize-window 'ace-delete-other-windows "0.10.0")
 
 ;;;###autoload
 (defun ace-window (arg)
