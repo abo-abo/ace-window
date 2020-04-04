@@ -1,5 +1,7 @@
 (defvar aw--posframe-frames '())
 
+(defvar aw-posframe-position-handler #'posframe-poshandler-window-center)
+
 (defun aw--lead-overlay-posframe (path leaf)
   (let* ((wnd (cdr leaf))
          (str (apply #'string path))
@@ -8,7 +10,7 @@
       (push bufname aw--posframe-frames)
       (posframe-show bufname
                      :string str
-                     :poshandler 'posframe-poshandler-window-center
+                     :poshandler aw-posframe-position-handler
                      :font (face-font 'aw-leading-char-face)
                      :foreground-color (face-foreground 'aw-leading-char-face)
                      :background-color (face-background 'aw-leading-char-face)))))
