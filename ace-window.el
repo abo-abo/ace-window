@@ -816,10 +816,14 @@ Switch the current window to the previous buffer."
     (switch-to-buffer buffer)))
 
 (defun aw-copy-window (window)
-  "Copy the current buffer to WINDOW."
-  (let ((buffer (current-buffer)))
+  "Copy the current buffer to WINDOW - including window-start and point."
+  (let ((buffer (current-buffer))
+        (window-start (window-start))
+        (point (point)))
     (aw-switch-to-window window)
-    (switch-to-buffer buffer)))
+    (switch-to-buffer buffer)
+    (set-window-start (frame-selected-window) window-start)
+    (goto-char point)))
 
 (defun aw-split-window-vert (window)
   "Split WINDOW vertically."
