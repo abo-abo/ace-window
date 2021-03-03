@@ -270,10 +270,6 @@ or
     (nconc minor-mode-alist
            (list '(ace-window-mode ace-window-mode))))
 
-(defvar aw-empty-buffers-list nil
-  "Store the read-only empty buffers which had to be modified.
-Modify them back eventually.")
-
 (defvar aw--windows-hscroll nil
   "List of (window . hscroll-columns) items, each listing a window whose
   horizontal scroll will be restored upon ace-window action completion.")
@@ -290,12 +286,6 @@ Modify them back eventually.")
   (mapc #'delete-overlay aw-overlays-back)
   (setq aw-overlays-back nil)
   (avy--remove-leading-chars)
-  (dolist (b aw-empty-buffers-list)
-    (with-current-buffer b
-      (when (string= (buffer-string) " ")
-        (let ((inhibit-read-only t))
-          (delete-region (point-min) (point-max))))))
-  (setq aw-empty-buffers-list nil)
   (aw--restore-windows-hscroll)
   (let (c)
     (while (setq c (pop aw--windows-points))
@@ -313,34 +303,45 @@ Modify them back eventually.")
           aw--windows-hscroll))
   (setq aw--windows-hscroll nil))
 
-(defun aw--overlay-str (wnd pos path)
-  "Return the replacement text for an overlay in WND at POS,
-accessible by typing PATH."
-  (let ((old-str (or
-                  (ignore-errors
-                    (with-selected-window wnd
-                      (buffer-substring pos (1+ pos))))
-                  "")))
-    (concat
-     (cl-case aw-leading-char-style
-       (char
-        (string (avy--key-to-char (car (last path)))))
-       (path
-        (mapconcat
-         (lambda (x) (string (avy--key-to-char x)))
-         (reverse path)
-         ""))
-       (t
-        (error "Bad `aw-leading-char-style': %S"
-               aw-leading-char-style)))
-     (cond ((string-equal old-str "\t")
-            (make-string (1- tab-width) ?\ ))
-           ((string-equal old-str "\n")
-            "\n")
-           (t
-            (make-string
-             (max 0 (1- (string-width old-str)))
-             ?\ ))))))
+(defun aw--make-lead (path wnd pos)
+  "Return an overlay displaying PATH in WND at POS."
+  (let* ((str (cl-case aw-leading-char-style
+                (char
+                 (string (avy--key-to-char (car (last path)))))
+                (path
+                 (mapconcat (lambda (x)
+                              (string (avy--key-to-char x)))
+                            (reverse path) ""))
+                (t
+                 (error "Bad `aw-leading-char-style': %S"
+                        aw-leading-char-style))))
+         (strategy (with-selected-window wnd
+                     (save-excursion
+                       (goto-char pos)
+                       (if (looking-at "\t\\|$\\|\\'")
+                           'after-string
+                         'display))))
+         (ol (make-overlay pos
+                           (if (eq strategy 'display) (1+ pos) pos)
+                           (window-buffer wnd)))
+         (width (max (if (eq strategy 'display)
+                         (with-selected-window wnd
+                           (string-width (buffer-substring pos (1+ pos))))
+                       0)
+                     (length str)))
+         (face (if (window-minibuffer-p wnd)
+                   'aw-minibuffer-leading-char-face
+                 'aw-leading-char-face)))
+    (overlay-put ol strategy
+                 (propertize (truncate-string-to-width str width nil ?\ )
+                             'face face))
+    (overlay-put ol 'window wnd)
+    ;; Move this overlay above other overlays (e.g. those from
+    ;; show-paren-mode and show-smartparens-mode). Ace-window is
+    ;; disorienting when its overlays are obstructed, i.e., some
+    ;; aggressiveness is justified.
+    (overlay-put ol 'priority (/ most-positive-fixnum 2))
+    ol))
 
 (defun aw--point-visible-p ()
   "Return non-nil if point is visible in the selected window.
@@ -359,10 +360,6 @@ LEAF is (PT . WND)."
         ;; Prevent temporary movement of point from scrolling any window.
         (scroll-margin 0))
     (with-selected-window wnd
-      (when (= 0 (buffer-size))
-        (push (current-buffer) aw-empty-buffers-list)
-        (let ((inhibit-read-only t))
-          (insert " ")))
       ;; If point is not visible due to horizontal scrolling of the
       ;; window, this next expression temporarily scrolls the window
       ;; right until point is visible, so that the leading-char can be
@@ -394,17 +391,12 @@ LEAF is (PT . WND)."
                     (move-to-column horizontal-pos)))
                 (recenter vertical-pos)
                 (point)))
-             (ol (make-overlay pt (1+ pt) (window-buffer wnd))))
+             (ol (aw--make-lead path wnd pt)))
         (if (= (aw--face-rel-height) 1)
             (goto-char old-pt)
           (when (/= pt old-pt)
             (goto-char (+ pt 1))
             (push (cons wnd old-pt) aw--windows-points)))
-        (overlay-put ol 'display (aw--overlay-str wnd pt path))
-        (if (window-minibuffer-p wnd)
-            (overlay-put ol 'face 'aw-minibuffer-leading-char-face)
-          (overlay-put ol 'face 'aw-leading-char-face))
-        (overlay-put ol 'window wnd)
         (push ol avy--overlays-lead)))))
 
 (defun aw--make-backgrounds (wnd-list)
