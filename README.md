@@ -1,5 +1,6 @@
 # ace-window
 
+[![GNU ELPA](https://elpa.gnu.org/packages/ace-window.svg)](https://elpa.gnu.org/packages/ace-window.html)
 [![MELPA](https://melpa.org/packages/ace-window-badge.svg)](https://melpa.org/#/ace-window)
 [![MELPA Stable](https://stable.melpa.org/packages/ace-window-badge.svg)](https://stable.melpa.org/#/ace-window)
 
