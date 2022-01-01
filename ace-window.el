@@ -65,6 +65,7 @@
 (require 'avy)
 (require 'ring)
 (require 'subr-x)
+(require 'posframe)
 
 ;;* Customization
 (defgroup ace-window nil
@@ -407,6 +408,30 @@ LEAF is (PT . WND)."
         (overlay-put ol 'window wnd)
         (push ol avy--overlays-lead)))))
 
+(defvar aw--posframes-lead nil
+  "List of posframe buffer names currently shown on screen")
+
+(defun aw--lead-posframe (path leaf)
+  "Create a posframe using PATH at LEAF.
+LEAF is (PT . WND)."
+  (let* ((wnd (cdr leaf))
+         (s (aw--overlay-str wnd (point-min) path))
+         (posframe-name (format "*avy-window %s*" s)))
+    ;; Add a posframe to every window and it won't interfere with buffer contents.
+    (push posframe-name aw--posframes-lead)
+    (with-selected-window wnd
+      (posframe-show posframe-name
+                     :string s
+                     ;; Show the hint in the center of each window.
+                     :poshandler 'posframe-poshandler-window-center
+                     :foreground-color (face-attribute 'aw-leading-char-face :foreground nil t)
+                     :override-parameters aw-posframe-parameters
+                     :font "18"))))
+
+(defun aw--remove-leading-posframes nil
+  (mapc #'posframe-hide aw--posframes-lead)
+  (setq aw--posframes-lead nil))
+
 (defun aw--make-backgrounds (wnd-list)
   "Create a dim background overlay for each window on WND-LIST."
   (when aw-background
@@ -516,9 +541,15 @@ The new frame is set to the same size as the previous frame, offset by
              (let ((avy-dispatch-alist))
                (avy-handler-default char)))))))
 
-(defcustom aw-display-mode-overlay t
-  "When nil, don't display overlays. Rely on the mode line instead."
-  :type 'boolean)
+(defcustom aw-display-style 'overlay
+  "Display ace-window navigation markers either as an overlay or posframe. When nil, rely on the mode line instead."
+  :type '(choice (const :tag "Overlay" overlay)
+                 (const :tag "Child Frame" posframe)
+                 (const :tag "None" nil)))
+
+(defcustom aw-posframe-parameters nil
+  "The frame parameters used when aw-display-style is 'posframe"
+  :type 'string)
 
 (defvar ace-window-display-mode)
 
@@ -564,19 +595,23 @@ Amend MODE-LINE to the mode line for the duration of the selection."
                    ;; turn off helm transient map
                    (remove-hook 'post-command-hook 'helm--maybe-update-keymap)
                    (unwind-protect
-                        (let* ((avy-handler-function aw-dispatch-function)
-                               (avy-translate-char-function aw-translate-char-function)
-                               (transient-mark-mode nil)
-                               (res (avy-read (avy-tree candidate-list aw-keys)
-                                              (if (and ace-window-display-mode
-                                                       (null aw-display-mode-overlay))
-                                                  (lambda (_path _leaf))
-                                                #'aw--lead-overlay)
-                                              #'avy--remove-leading-chars)))
-                          (if (eq res 'exit)
-                              (setq aw-action nil)
-                            (or (cdr res)
-                                start-window)))
+                       (let* ((avy-handler-function aw-dispatch-function)
+                              (avy-translate-char-function aw-translate-char-function)
+                              (transient-mark-mode nil)
+                              (res (avy-read (avy-tree candidate-list aw-keys)
+                                             (if (and ace-window-display-mode
+                                                      aw-display-style)
+                                                 (lambda (_path _leaf))
+                                               (pcase aw-display-style
+                                                 ('overlay #'aw--lead-overlay)
+                                                 ('posframe #'aw--lead-posframe)))
+                                             (pcase aw-display-style
+                                               ('overlay #'avy--remove-leading-chars)
+                                               ('posframe #'aw--remove-leading-posframes)))))
+                         (if (eq res 'exit)
+                             (setq aw-action nil)
+                           (or (cdr res)
+                               start-window)))
                      (aw--done))))))
     (if aw-action
         (funcall aw-action window)
