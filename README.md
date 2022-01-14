@@ -69,10 +69,12 @@ You can also start by calling `ace-window` and then decide to switch the action 
 - <kbd>j</kbd> - select buffer
 - <kbd>n</kbd> - select the previous window
 - <kbd>u</kbd> - select buffer in the other window
-- <kbd>c</kbd> - split window fairly, either vertically or horizontally
+- <kbd>e</kbd> - execute command other window
+- <kbd>F</kbd> - split window fairly, either vertically or horizontally
 - <kbd>v</kbd> - split window vertically
 - <kbd>b</kbd> - split window horizontally
-- <kbd>o</kbd> - maximize current window
+- <kbd>o</kbd> - delete other windows
+- <kbd>T</kbd> - transpose frame
 - <kbd>?</kbd> - show these command bindings
 
 For proper operation, these keys *must not* be in `aw-keys`.  Additionally,
