@@ -24,7 +24,7 @@
 
 (defun aw--remove-leading-chars-posframe ()
   ;; Hide rather than delete. See aw--lead-overlay-posframe for why.
-  (map nil #'posframe-hide aw--posframe-frames)
+  (cl-map nil #'posframe-hide aw--posframe-frames)
   (setq aw--posframe-frames '()))
 
 (defun ace-window-posframe-enable ()
