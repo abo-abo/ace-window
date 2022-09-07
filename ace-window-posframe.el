@@ -16,7 +16,7 @@
          ;; something like: a frame exists which hasn't been deleted
          ;; (with posframe-delete) and has the same configuration as
          ;; the requested new frame.
-         (bufname (format "*aw-posframe-buffer-%s*" path)))
+         (bufname (format " *aw-posframe-buffer-%s*" path)))
     (with-selected-window wnd
       (push bufname aw--posframe-frames)
       (posframe-show bufname
