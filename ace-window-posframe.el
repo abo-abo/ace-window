@@ -1,3 +1,7 @@
+;;; ace-window-posframe.el --- posframe support for ace-window -*- lexical-binding: t -*-
+
+;; Copyright (C) 2015-2022  Free Software Foundation, Inc.
+
 (defvar aw--posframe-frames '())
 
 (defvar aw-posframe-position-handler #'posframe-poshandler-window-center)
@@ -24,16 +28,16 @@
 
 (defun aw--remove-leading-chars-posframe ()
   ;; Hide rather than delete. See aw--lead-overlay-posframe for why.
-  (cl-map nil #'posframe-hide aw--posframe-frames)
-  (setq aw--posframe-frames '()))
+  (mapc #'posframe-hide aw--posframe-frames)
+  (setq aw--posframe-frames nil))
 
 (defun ace-window-posframe-enable ()
-  (setq aw--lead-overlay-fn #'aw--lead-overlay-posframe
-        aw--remove-leading-chars-fn #'aw--remove-leading-chars-posframe))
+  (setq aw--lead-overlay-fn #'aw--lead-overlay-posframe)
+  (setq aw--remove-leading-chars-fn #'aw--remove-leading-chars-posframe))
 
 (defun ace-window-posframe-disable ()
-  (setq aw--lead-overlay-fn #'aw--lead-overlay
-        aw--remove-leading-chars-fn #'aw--remove-leading))
+  (setq aw--lead-overlay-fn #'aw--lead-overlay)
+  (setq aw--remove-leading-chars-fn #'aw--remove-leading-chars))
 
 ;;;###autoload
 (define-minor-mode ace-window-posframe-mode
