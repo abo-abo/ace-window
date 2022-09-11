@@ -2,6 +2,14 @@
 
 ;; Copyright (C) 2015-2022  Free Software Foundation, Inc.
 
+(require 'ace-window)
+
+;; Suppress warnings
+(declare-function posframe-poshandler-window-center "ext:posframe")
+(declare-function posframe-show "ext:posframe")
+(declare-function posframe-hide "ext:posframe")
+(declare-function posframe-workable-p "ext:posframe")
+
 (defvar aw--posframe-frames '())
 
 (defvar aw-posframe-position-handler #'posframe-poshandler-window-center)
@@ -23,8 +31,8 @@
                      :string str
                      :poshandler aw-posframe-position-handler
                      :font (face-font 'aw-leading-char-face)
-                     :foreground-color (face-foreground 'aw-leading-char-face)
-                     :background-color (face-background 'aw-leading-char-face)))))
+                     :foreground-color (face-foreground 'aw-leading-char-face nil t)
+                     :background-color (face-background 'aw-leading-char-face nil t)))))
 
 (defun aw--remove-leading-chars-posframe ()
   ;; Hide rather than delete. See aw--lead-overlay-posframe for why.
@@ -32,6 +40,9 @@
   (setq aw--posframe-frames nil))
 
 (defun ace-window-posframe-enable ()
+  (unless (and (require 'posframe nil t) (posframe-workable-p))
+    (error "Posframe is not workable"))
+
   (setq aw--lead-overlay-fn #'aw--lead-overlay-posframe)
   (setq aw--remove-leading-chars-fn #'aw--remove-leading-chars-posframe))
 
@@ -41,9 +52,10 @@
 
 ;;;###autoload
 (define-minor-mode ace-window-posframe-mode
-  ""
+  "Minor mode for showing the ace window key with child frames."
   :global t
   :require 'ace-window
+  :group 'ace-window
   :init-value nil
   (if ace-window-posframe-mode
       (ace-window-posframe-enable)
