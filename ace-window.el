@@ -93,16 +93,19 @@ For example, to make SPC do the same as ?a, use
           (function :tag "Custom")))
 
 (defcustom aw-minibuffer-flag nil
-  "When non-nil, also display `ace-window-mode' string in the minibuffer when ace-window is active."
+  "When non-nil, also display `ace-window-mode' string in the
+minibuffer when ace-window is active."
   :type 'boolean)
 
 (defcustom aw-ignored-buffers '("*Calc Trail*" " *LV*")
-  "List of buffers and major-modes to ignore when choosing a window from the window list.
+  "List of buffers and major-modes to ignore when choosing a window
+from the window list.
 Active only when `aw-ignore-on' is non-nil."
   :type '(repeat string))
 
 (defcustom aw-ignore-on t
-  "When t, `ace-window' will ignore buffers and major-modes in `aw-ignored-buffers'.
+  "When t, `ace-window' will ignore buffers and major-modes in
+`aw-ignored-buffers'.
 Use M-0 `ace-window' to toggle this value."
   :type 'boolean)
 
@@ -117,8 +120,8 @@ Use M-0 `ace-window' to toggle this value."
 (defcustom aw-leading-char-style 'char
   "Style of the leading char overlay."
   :type '(choice
-          (const :tag "single char" 'char)
-          (const :tag "full path" 'path)))
+          (const :tag "single char" char)
+          (const :tag "full path" path)))
 
 (defcustom aw-dispatch-always nil
   "When non-nil, `ace-window' will issue a `read-char' even for one window.
@@ -136,22 +139,25 @@ the reverse of `frame-list'"
   :type 'boolean)
 
 (defcustom aw-frame-offset '(13 . 23)
-  "Increase in pixel offset for new ace-window frames relative to the selected frame.
+  "Increase in pixel offset for new ace-window frames relative to
+the selected frame.
 Its value is an (x-offset . y-offset) pair in pixels."
   :type '(cons integer integer))
 
 (defcustom aw-frame-size nil
   "Frame size to make new ace-window frames.
-Its value is a (width . height) pair in pixels or nil for the default frame size.
-(0 . 0) is special and means make the frame size the same as the last selected frame size."
+Its value is a (width . height) pair in pixels or nil for the
+default frame size.
+(0 . 0) is special and means make the frame size the same as the
+last selected frame size."
   :type '(cons integer integer))
 
 (defcustom aw-char-position 'top-left
   "Window positions of the character overlay.
 Consider changing this if the overlay tends to overlap with other things."
   :type '(choice
-          (const :tag "top left corner only" 'top-left)
-          (const :tag "both left corners" 'left)))
+          (const :tag "top left corner only" top-left)
+          (const :tag "both left corners" left)))
 
 ;; Must be defined before `aw-make-frame-char' since its :set function references this.
 (defvar aw-dispatch-alist
@@ -172,9 +178,11 @@ Consider changing this if the overlay tends to overlap with other things."
     (?? aw-show-dispatch-help))
   "List of actions for `aw-dispatch-default'.
 Each action is a list of either:
-  (char function description) where function takes a single window argument
+  (char function description) where function takes a single
+  window argument
 or
-  (char function) where function takes no argument and the description is omitted.")
+  (char function) where function takes no argument and the
+  description is omitted.")
 
 (defun aw-set-make-frame-char (option value)
   ;; Signal an error if `aw-make-frame-char' is ever set to an invalid
@@ -189,7 +197,8 @@ or
   (set option value))
 
 (defcustom aw-make-frame-char ?z
-  "Non-existing ace window label character that triggers creation of a new single-window frame for display."
+  "Non-existing ace window label character that triggers creation
+of a new single-window frame for display."
   :set 'aw-set-make-frame-char
   :type 'character)
 
@@ -447,7 +456,8 @@ LEAF is (PT . WND)."
   (assoc char aw-dispatch-alist))
 
 (defun aw-make-frame ()
-  "Make a new Emacs frame using the values of `aw-frame-size' and `aw-frame-offset'."
+  "Make a new Emacs frame using the values of `aw-frame-size' and
+`aw-frame-offset'."
   (make-frame
    (delq nil
          (list
