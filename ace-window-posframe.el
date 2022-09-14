@@ -28,11 +28,8 @@
     (with-selected-window wnd
       (push bufname aw--posframe-frames)
       (posframe-show bufname
-                     :string str
-                     :poshandler aw-posframe-position-handler
-                     :font (face-font 'aw-leading-char-face)
-                     :foreground-color (face-foreground 'aw-leading-char-face nil t)
-                     :background-color (face-background 'aw-leading-char-face nil t)))))
+                     :string (propertize str 'face 'aw-leading-char-face)
+                     :poshandler aw-posframe-position-handler))))
 
 (defun aw--remove-leading-chars-posframe ()
   ;; Hide rather than delete. See aw--lead-overlay-posframe for why.
