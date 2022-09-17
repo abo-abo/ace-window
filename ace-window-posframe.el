@@ -16,7 +16,7 @@
 
 (defun aw--lead-overlay-posframe (path leaf)
   (let* ((wnd (cdr leaf))
-         (str (format "%s" (apply #'string path)))
+         (str (format "%s" (apply #'string (reverse path))))
          ;; It's important that buffer names are not unique across
          ;; multiple invocations: posframe becomes very slow when
          ;; creating new frames, and so being able to reuse old ones
