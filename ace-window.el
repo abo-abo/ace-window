@@ -120,6 +120,12 @@ Use M-0 `ace-window' to toggle this value."
           (const :tag "single char" 'char)
           (const :tag "full path" 'path)))
 
+(defcustom aw-select-always nil
+  "When non-nil, `ace-window' will activate ace-window-ness even for on window.
+This will make `ace-window' act different from `other-window' for
+  one or two windows."
+  :type 'boolean)
+
 (defcustom aw-dispatch-always nil
   "When non-nil, `ace-window' will issue a `read-char' even for one window.
 This will make `ace-window' act different from `other-window' for
@@ -543,7 +549,7 @@ Amend MODE-LINE to the mode line for the duration of the selection."
         (wnd-list (aw-window-list))
         window)
     (setq window
-          (cond ((<= (length wnd-list) 1)
+          (cond ((and (not aw-select-always) (<= (length wnd-list) 1))
                  (when aw-dispatch-always
                    (setq aw-action
                          (unwind-protect
