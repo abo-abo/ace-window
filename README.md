@@ -147,7 +147,7 @@ the action.  Otherwise, the current window is selected.
 If for instance you would like to close a window, when several are open,
 you can do:
 
-	`M-o ? x 2`
+	M-o ? x n 
 
 Where `n`  is the window number, in order to close window number `n`.
 
