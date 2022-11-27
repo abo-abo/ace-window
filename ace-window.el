@@ -870,7 +870,7 @@ Modify `aw-fair-aspect-ratio' to tweak behavior."
   "Execute a command in WINDOW."
   (aw-switch-to-window window)
   (unwind-protect
-      (funcall
+      (call-interactively
        (key-binding
         (read-key-sequence
          "Enter key sequence: ")))
