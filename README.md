@@ -69,10 +69,12 @@ You can also start by calling `ace-window` and then decide to switch the action 
 - <kbd>j</kbd> - select buffer
 - <kbd>n</kbd> - select the previous window
 - <kbd>u</kbd> - select buffer in the other window
-- <kbd>c</kbd> - split window fairly, either vertically or horizontally
+- <kbd>e</kbd> - execute a key sequence in the other window
+- <kbd>F</kbd> - split window fairly, either vertically or horizontally
 - <kbd>v</kbd> - split window vertically
 - <kbd>b</kbd> - split window horizontally
 - <kbd>o</kbd> - maximize current window
+- <kbd>T</kbd> - transpose frame
 - <kbd>?</kbd> - show these command bindings
 
 For proper operation, these keys *must not* be in `aw-keys`.  Additionally,
@@ -133,10 +135,12 @@ This is the list of actions you can trigger from `ace-window` other than the
 		(?j aw-switch-buffer-in-window "Select Buffer")
 		(?n aw-flip-window)
 		(?u aw-switch-buffer-other-window "Switch Buffer Other Window")
-		(?c aw-split-window-fair "Split Fair Window")
+		(?e aw-execute-command-other-window "Execute Command Other Window")
+		(?F aw-split-window-fair "Split Fair Window")
 		(?v aw-split-window-vert "Split Vert Window")
 		(?b aw-split-window-horz "Split Horz Window")
 		(?o delete-other-windows "Delete Other Windows")
+		(?T aw-transpose-frame "Transpose Frame")
 		(?? aw-show-dispatch-help))
 	  "List of actions for `aw-dispatch-default'.")
 
