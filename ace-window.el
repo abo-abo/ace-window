@@ -293,7 +293,7 @@ Modify them back eventually.")
   (dolist (b aw-empty-buffers-list)
     (with-current-buffer b
       (when (string= (buffer-string) " ")
-        (let ((inhibit-read-only t))
+        (with-silent-modifications
           (delete-region (point-min) (point-max))))))
   (setq aw-empty-buffers-list nil)
   (aw--restore-windows-hscroll)
@@ -361,7 +361,7 @@ LEAF is (PT . WND)."
     (with-selected-window wnd
       (when (= 0 (buffer-size))
         (push (current-buffer) aw-empty-buffers-list)
-        (let ((inhibit-read-only t))
+        (with-silent-modifications
           (insert " ")))
       ;; If point is not visible due to horizontal scrolling of the
       ;; window, this next expression temporarily scrolls the window
